@@ -3,6 +3,7 @@ import json
 import base64
 from pathlib import Path
 import plistlib
+import platform
 import shutil
 import subprocess
 
@@ -10,7 +11,8 @@ root = Path(__file__).resolve().parents[1]
 app = root/'dist/PlateLab.app/Contents'
 resources = app/'Resources'; binary = app/'MacOS'
 resources.mkdir(parents=True, exist_ok=True); binary.mkdir(parents=True, exist_ok=True)
-subprocess.run(['swiftc','-O',str(root/'app/native/PlateLab.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/module-cache')],check=True)
+target = f'{platform.machine()}-apple-macosx13.0'
+subprocess.run(['swiftc','-O','-target',target,str(root/'app/native/PlateLab.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/module-cache')],check=True)
 for filename in ['index.html','style.css','live.css','core.js','app.js']:
     shutil.copy2(root/'app'/filename,resources/filename)
 samples=[]

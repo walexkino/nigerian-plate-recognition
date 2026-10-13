@@ -231,3 +231,18 @@ __marimo__/
 .env.*
 !.env.example
 .DS_Store
+
+# Project privacy: dataset and image-derived artifacts must stay local.
+/app/samples/
+/app/samples.js
+/app/samples.json
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+*.mp4
+*.mov
+*.avi
+*.zip
+*.app/

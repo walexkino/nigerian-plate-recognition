@@ -28,3 +28,9 @@ Hardware reported by the user: MacBook with Apple M5 and 24 GB RAM. Each of the 
 CLI memory was measured with macOS `getrusage(RUSAGE_CHILDREN).ru_maxrss` and converted from bytes to MiB. The desktop host snapshot was measured with `ps`, converting KiB to MiB. Neither figure is the complete desktop application's memory: WebKit and OS-managed acceleration services are separate. No complete application peak, GPU memory, long-video soak test or Windows test has been measured. Timing of native video decoding was not included in the CLI benchmark.
 
 Raw benchmark outputs and predictions are local-only. Dataset subsampling was by available download order, so these figures are not representative performance guarantees. Ground-truth accuracy, calibration and robustness remain unmeasured.
+
+## Refinement check — 14 October 2026
+
+The rebuilt app displays disagreement between OCR passes, including alternative characters from comparable readings. Pass agreement is labelled as evidence from repeated processing of the same pixels, never as a probability. The raw OCR score remains available separately.
+
+Eight candidate-processing tests and a JavaScript syntax check passed, and the native macOS app rebuilt successfully. The compiled OCR was spot-checked on two local images: the extra passes recovered a visibly legible character missed by the original pass in one case, while a smaller, blurrier plate still produced conflicting character readings. These checks do not establish dataset accuracy or reliable recovery of obscured characters. Full recognition needs verified ground truth and the evaluation protocol above.

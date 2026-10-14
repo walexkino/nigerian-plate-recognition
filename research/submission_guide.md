@@ -8,7 +8,7 @@ The originally supplied Andela brief concerns learning access, sustained engagem
 
 ## Three-minute demonstration
 
-1. Open `dist/PlateLab.app`. No Python environment or server is needed to run the built app on this Mac.
+1. Open `dist/macos/PlateLab.app`. No Python environment or server is needed to run the built app on this Mac.
 2. Choose **Dataset**, load a photograph, and click **Recognize frame**. Check the green text-region box and the candidate against the photograph.
 3. Explain that **OCR confidence is uncalibrated**, so 100% is not a guarantee. Per-character confidence is marked unavailable, rather than simulated.
 4. Use **Select plate region** and drag around a small plate. Run recognition again. Enlarging a crop may help OCR inspect existing signal, but adds no new observed detail.

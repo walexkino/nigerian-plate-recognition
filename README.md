@@ -1,20 +1,46 @@
 # PlateLab: Nigerian licence-plate recognition under partial occlusion
 
-A local desktop research prototype by **Akinwale Awoyele**. The first working release reads visible plate text from images and sampled video frames, shows actual OCR scores, and supports human review.
+Local licence-plate recognition prototypes for **macOS and Android**, by **Akinwale Awoyele**. Both apps read visible plate text, show recognizer evidence, and support human review. They have separate native implementations and build processes.
+
+Current release: **0.3.1**, macOS build **5**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
+
+The custom application icon is stored in `shared/branding/platelab-icon.png`. The build script creates the standard and Retina `.icns` sizes and registers the icon in the macOS bundle.
+
+## Project layout
+
+```text
+apps/
+  macos/          Swift app, browser interface, build scripts, and tests
+  android/        Android Studio/Gradle app, resources, and Android tests
+shared/
+  branding/       Original PlateLab icon and its design notes
+research/         Research guides, dataset tools, and Python requirements
+scripts/          Commands that build both apps
+docs/             Shared documentation and the approved synthetic screenshot
+```
+
+Each app is self-contained. macOS uses Apple Vision and Android uses bundled ML Kit; they share branding but do not import each other's app code. Local packages are grouped under `dist/macos/` and `dist/android/`. Development caches are kept in the ignored `build/` directory.
+
+| Platform | Source and setup | Local package |
+| --- | --- | --- |
+| macOS | [macOS app](apps/macos/README.md) | `dist/macos/PlateLab.app` |
+| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.3.1.apk` |
 
 ## App screenshot
 
-![PlateLab macOS app recognizing an invented plate in a synthetic road scene](docs/images/platelab-synthetic-demo.jpg)
+![PlateLab macOS app recognizing an invented plate in a synthetic scene](docs/images/platelab-synthetic-demo.jpg)
 
-The screenshot shows a successfully built macOS app using a fully synthetic demonstration image with the invented plate `ABC 123 DE`. It is an interface demonstration, not a measurement of accuracy on the research dataset.
+This screenshot is from the initial macOS prototype and uses the invented plate `ABC 123 DE`. It shows the interface, not measured recognition accuracy.
 
-
-## Current implementation
+## Current macOS implementation
 
 - Native macOS `.app`, built with Swift, WKWebView and Apple's on-device Vision OCR.
 - Image and video import, user-selected plate region, text bounding boxes and alternative candidates.
+- Live RTSP/IP-camera connection with continuous recognition, pause/resume, and disconnect.
 - Sequential video processing at one sampled frame per second; stop control and a 120-frame run limit.
 - Raw OCR confidence, manual transcription, review status and JSON export.
+- Light/dark appearance control with a saved preference; a wrapping header and visible navigation on compact windows.
+- A Bitcoin donation panel with wallet support, QR code, and copy-address action.
 - Frames capped at 1280 pixels on their longest side; at most 12 previews and 1,000 text records retained.
 - Python tools for dataset inventory, duplicate audit, baseline timing and a labelled synthetic video.
 
@@ -25,18 +51,43 @@ The app has **not** been trained on this dataset. It does not yet implement a CR
 Requires macOS 13 or newer and Apple command-line developer tools to build:
 
 ```sh
-python3 scripts/build_macos.py
-open dist/PlateLab.app
+python3 apps/macos/scripts/build.py
+open dist/macos/PlateLab.app
 ```
 
 The resulting app runs without Python, a web server, cloud inference, or downloaded neural weights. It is locally ad-hoc signed, not notarized for public distribution. The current build targets the host architecture; the tested build is Apple Silicon. A Windows executable is **not implemented**; it needs a different OCR backend and packaging.
 
+Open `dist/macos/PlateLab.app` from Finder as a macOS application. If an earlier version is running, export any results you want to keep, quit it, and reopen the updated app. Rebuilding does not replace an already-running process. Recognition history is currently held in memory. If the system's selected SDK does not match its Swift compiler, set `SDKROOT` to a compatible installed SDK before building; this machine was verified with `/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk`.
+
+## Live street-camera feeds
+
+Build with the optional camera decoder:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r apps/macos/requirements-live.txt
+.venv/bin/python apps/macos/scripts/build.py
+open dist/macos/PlateLab.app
+```
+
+Select **Live feed**, enter your camera's RTSP URL and a camera name, then select **Connect**. The app supports RTSP over TCP and HTTP/HTTPS video streams. It recognizes the newest sampled frame up to once per second; slower OCR reduces that rate without accumulating a backlog. Pause recognition to inspect a reading, select a fixed plate region, or edit/review results. Resume continues with the newest frame. Disconnect closes the camera connection.
+
+Exports include the camera name, time since connection, and frame capture time. Camera URLs and credentials are not saved in reports. At most 12 image previews and the newest 1,000 records are retained. Recognition remains the Apple Vision baseline; live mode does not add vehicle tracking, temporal fusion, or calibrated recognition accuracy.
+
+FFmpeg is a separate decoder executable bundled at build time. Python is not required to run the resulting app. Its license and build information are included in `Contents/Resources/FFmpeg-LICENSE.txt`; FFmpeg's own distribution terms apply to that executable. Builds without the optional dependency retain image/file-video recognition. Use `--without-samples` to omit local dataset samples, or `--output PATH` for a separate build.
+
 For an optional browser development preview after building:
 
 ```sh
-python3 scripts/dev_server.py
+python3 apps/macos/scripts/dev_server.py
 # Visit http://127.0.0.1:58070
 ```
+
+## Support PlateLab
+
+Select **Support us** to donate BTC to `3DhdtBbkE7TsiZzAU5JJuV3M7dYzygj8R2`. Scan the QR code with a Bitcoin wallet, or copy the address. In the native macOS app, **Open Bitcoin wallet** opens an installed handler for the Bitcoin payment URI; if none is available, the panel shows the QR/copy alternatives. The browser preview stays on the panel instead of sending Safari to an unsupported address.
+
+This is a direct wallet donation, with no hosted payment gateway or card checkout. The donor chooses and confirms the amount in their wallet. The app does not process funds or verify payment completion.
 
 ## Dataset stays local
 
@@ -46,12 +97,12 @@ The author has authorized project use of his dataset. No public redistribution l
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements-audit.txt
+.venv/bin/python -m pip install -r research/requirements-audit.txt
 mkdir -p outputs/audit
 .venv/bin/gdown 'YOUR_PUBLIC_DRIVE_FOLDER_URL' --json --no-cookies --timeout 30 > outputs/audit/drive_inventory.json
-.venv/bin/python scripts/download_dataset.py
-.venv/bin/python scripts/audit_dataset.py
-.venv/bin/python scripts/benchmark_baseline.py
+.venv/bin/python research/scripts/download_dataset.py
+.venv/bin/python research/scripts/audit_dataset.py
+.venv/bin/python research/scripts/benchmark_baseline.py
 ```
 
 Download names use unique Drive IDs to prevent collisions on case-insensitive filesystems. Repeated failures stop further batches; rerun later to resume existing downloads. Do not interpret a partial download as the complete dataset.
@@ -59,8 +110,8 @@ Download names use unique Drive IDs to prevent collisions on case-insensitive fi
 To create the explicitly labelled **synthetic** road-motion demonstration:
 
 ```sh
-.venv/bin/python -m pip install -r requirements-demo.txt
-.venv/bin/python scripts/make_demo_video.py
+.venv/bin/python -m pip install -r research/requirements-demo.txt
+.venv/bin/python research/scripts/make_demo_video.py
 ```
 
 This transforms a source photograph into a moving inset over a road illustration with an artificial occluder. It is not recorded highway footage and must not be used to claim highway accuracy.
@@ -68,9 +119,11 @@ This transforms a source photograph into a moving inset over a road illustration
 ## Validation
 
 ```sh
-node --test tests/core.test.js
-python3 -m compileall -q scripts
+node --test apps/macos/tests/*.test.js
+python3 -m compileall -q apps/macos/scripts apps/android/scripts research/scripts
 ```
+
+Release 0.2.0 was checked with JavaScript workflow regressions and an end-to-end synthetic RTSP feed that exercised the native decoder, successive frames, Apple Vision recognition, and disconnect. A real street-camera feed has not yet been supplied or tested.
 
 On the 154 downloaded 699×466 images, a local benchmark on 2026-10-13 completed without OCR process failures: median 142.9 ms, p95 155.8 ms, peak child-process RSS 54.84 MiB. Each invocation launched a fresh OCR process. These are descriptive timings, **not recognition accuracy**. The memory figure excludes the desktop UI and WebKit processes. No ground-truth test set exists yet. See `research/validation.md`.
 
@@ -79,3 +132,9 @@ On the 154 downloaded 699×466 images, a local benchmark on 2026-10-13 completed
 The planned research baseline is CRNN–CTC. Future experiments must use verified transcripts, plate regions, vehicle-identity-disjoint splits, occlusion severity labels, uncertainty calibration and an untouched test set. Any new method must be compared against credible baselines with ablations. Current app functionality establishes an inference and review workflow; it does not establish scientific novelty or solve missing visual information.
 
 See `research/submission_guide.md` for today's demonstration and `research/experiment_protocol.md` for the remaining research work.
+
+## Android prototype
+
+The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.3.1, with saved light/dark appearance and a first-launch guided tour. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
+
+© 2026 Akinwale. The source code is available under the [MIT License](LICENSE).

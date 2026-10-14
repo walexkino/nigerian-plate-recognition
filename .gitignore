@@ -233,9 +233,9 @@ __marimo__/
 .DS_Store
 
 # Project privacy: dataset and image-derived artifacts must stay local.
-/app/samples/
-/app/samples.js
-/app/samples.json
+/apps/macos/ui/samples/
+/apps/macos/ui/samples.js
+/apps/macos/ui/samples.json
 *.jpg
 *.jpeg
 *.png
@@ -246,3 +246,18 @@ __marimo__/
 *.avi
 *.zip
 *.app/
+
+# Project branding is a source asset, not dataset media.
+!shared/branding/platelab-icon.png
+
+# Android build tools, signing material, and packaged outputs stay local.
+apps/android/.gradle/
+apps/android/local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+!apps/android/app/src/main/res/mipmap-*/ic_launcher*.png
+
+# Existing synthetic documentation image is approved for the README.
+!docs/images/platelab-synthetic-demo.jpg

@@ -1,0 +1,52 @@
+#plate-studio{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;--s-radius:14px}#plate-studio .ps-scene{height:440px;aspect-ratio:auto;background:radial-gradient(ellipse at 50% 15%,#23352f,#101719);display:flex;align-items:center;justify-content:center;touch-action:none}#viewer{max-width:100%;max-height:100%;width:auto;height:auto;display:block}#plate-studio .ps-plate-reading{font-size:34px;overflow-wrap:anywhere}#plate-studio .ps-character-grid{grid-template-columns:repeat(auto-fit,minmax(30px,1fr))}#plate-studio .ps-character-grid button{padding:10px 0;background:var(--s-panel);border:1px solid var(--s-line);border-radius:7px;font:22px monospace;cursor:pointer}#plate-studio .ps-character-grid button.selected{border-color:var(--s-accent);color:var(--s-accent)}#plate-studio .ps-character-grid small{display:block;font:10px sans-serif;color:var(--s-muted);margin-top:8px}#plate-studio .character-detail{color:var(--s-muted);font-size:12px;line-height:1.65;padding:12px 0}#plate-studio .toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:15px 0}#plate-studio .toolbar>span{margin-left:auto;color:var(--s-muted);font:11px monospace}#plate-studio .ps-button{cursor:pointer}#plate-studio button:disabled{cursor:default}#plate-studio .ps-rail-button{font-size:21px}#plate-studio .ps-rail-button span{font-size:10px}#plate-studio #empty{text-align:center;padding:32px;position:absolute}#plate-studio #empty p{font-size:14px;line-height:1.8;color:var(--s-muted);margin:15px 0 26px}#plate-studio #empty h2{font-size:25px}#plate-studio #empty .ps-button{margin:4px}.empty-symbol{font-size:62px;color:#74d6ad;margin-bottom:18px}#plate-studio .scene-badge{position:absolute;top:16px;left:16px;background:#15251fd9;border:1px solid #8bcaae40;color:#cbf2e1;padding:7px 10px;border-radius:5px;font:10px monospace;pointer-events:none}#plate-studio .history{display:flex;gap:10px;overflow-x:auto;min-height:106px;padding:8px 0}#plate-studio .history:empty::after{content:'Your recognition results will appear here.';color:var(--s-muted);font-size:12px;padding:28px 8px}#plate-studio .history button{flex:0 0 133px;background:var(--s-panel);border:1px solid var(--s-line);border-radius:8px;overflow:hidden;text-align:left;padding:0;cursor:pointer}#plate-studio .history img{width:133px;height:76px;object-fit:contain;background:#101315}#plate-studio .history span{display:block;font:11px monospace;padding:8px}#plate-studio #video{width:100%;max-height:180px;background:#0b1011}#plate-studio .alternatives button{display:flex;justify-content:space-between;gap:16px;width:100%;padding:11px 0;border:0;border-bottom:1px solid var(--s-line);background:transparent;font:13px monospace;cursor:pointer}#plate-studio .version{font:10px monospace;color:var(--s-muted);padding:16px}#plate-studio dialog{color:var(--s-text);background:var(--s-surface);border:1px solid var(--s-line);border-radius:16px;padding:28px;width:min(780px,90vw);max-height:85vh}#plate-studio dialog::backdrop{background:#000a;backdrop-filter:blur(5px)}#plate-studio .dialog-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}#plate-studio #dialog-body{font-size:14px;line-height:1.7}#plate-studio .sample-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}#plate-studio .sample-grid button{background:var(--s-panel);border:1px solid var(--s-line);color:var(--s-text);border-radius:8px;cursor:pointer;overflow:hidden;padding:0}#plate-studio .sample-grid img{width:100%;height:120px;object-fit:contain}#plate-studio .sample-grid span{display:block;padding:10px;font:11px monospace}#plate-studio #dialog-body input,#plate-studio #dialog-body textarea{box-sizing:border-box;width:100%;background:var(--s-panel);color:var(--s-text);border:1px solid var(--s-line);padding:14px;border-radius:8px;font:14px monospace}#plate-studio #dialog-body p{margin-bottom:14px}#plate-studio #dialog-body a{color:var(--s-accent)}@media(min-width:1200px){#plate-studio .ps-workspace{grid-template-columns:minmax(0,1fr) 340px}}@media(max-width:700px){#plate-studio .ps-scene{height:300px}#plate-studio .sample-grid{grid-template-columns:repeat(2,1fr)}#plate-studio .ps-project{display:none}#plate-studio .ps-header{gap:10px}#plate-studio .ps-brand-suffix{display:none}}
+#plate-studio .ps-support{color:var(--s-accent)}
+#plate-studio .ps-support:hover{background:var(--s-soft)}
+#plate-studio .support-panel{display:grid;grid-template-columns:250px minmax(0,1fr);gap:30px;align-items:start}
+#plate-studio .support-qr{padding:11px;border-radius:16px;background:#f4f8f5;color:#31463a;text-align:center}
+#plate-studio .support-qr img{display:block;width:100%;height:auto;border-radius:9px;image-rendering:pixelated}
+#plate-studio .support-qr p{font-size:11px;margin:9px 0 0;line-height:1.5}
+#plate-studio .support-badge{display:inline-block;color:var(--s-accent);font-size:10px;font-weight:600;letter-spacing:1.2px;margin:0 0 13px}
+#plate-studio .support-body h3{font-size:23px;line-height:1.25;margin:0 0 12px;letter-spacing:-.5px}
+#plate-studio .support-body>p{color:var(--s-muted);font-size:13px;line-height:1.65}
+#plate-studio .support-label{font-size:10px!important;text-transform:uppercase;letter-spacing:1px;margin:18px 0 7px!important}
+#plate-studio .support-address{display:block;background:var(--s-panel);border:1px solid var(--s-line);border-radius:9px;padding:12px;font:12px/1.65 monospace;overflow-wrap:anywhere;user-select:all}
+#plate-studio .support-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 12px}
+#plate-studio .support-actions a{text-decoration:none;display:inline-flex;align-items:center;color:var(--s-accent-ink)!important}
+#plate-studio .support-status{font-size:11px!important;line-height:1.6!important;min-height:36px;margin-bottom:0!important}
+#plate-studio #dialog-body select{width:100%;padding:12px;border:1px solid var(--s-line);border-radius:8px;background:var(--s-panel);color:var(--s-text);margin:12px 0}
+#plate-studio #dialog-body input+input{margin-top:12px}
+#plate-studio #live-controls{border:1px solid var(--s-line);border-radius:10px;padding:0 12px 12px;background:var(--s-panel)}
+#plate-studio #live-controls .toolbar>span{margin:0 auto 0 0;color:var(--s-accent)}
+@media(max-width:650px){#plate-studio .support-panel{grid-template-columns:1fr;gap:20px}#plate-studio .support-qr{width:230px;justify-self:center}}
+
+/* Keep navigation and controls reachable on narrow windows and zoomed layouts. */
+html,body{min-width:0}
+#plate-studio .ps-header{flex-wrap:wrap;gap:16px}
+#plate-studio .ps-header-actions{flex-wrap:wrap}
+#plate-studio .ps-source-name{overflow-wrap:anywhere}
+#plate-studio .ps-plate-reading{white-space:normal;overflow-wrap:anywhere}
+#plate-studio .alternatives button{flex-wrap:wrap;overflow-wrap:anywhere}
+#plate-studio .ps-scene{height:clamp(320px,42vw,520px)}
+#plate-studio #empty{color:#edf2ef;width:100%;max-width:480px}
+#plate-studio #empty p{color:#bccac3}
+#plate-studio .dialog-head{gap:12px}
+#plate-studio .support-qr{max-width:100%}
+#plate-studio .ps-footer>span:first-child{flex-wrap:wrap}
+@media(max-width:850px){
+ #plate-studio .ps-workspace{grid-template-columns:1fr}
+ #plate-studio .ps-layout{grid-template-columns:1fr}
+ #plate-studio .ps-rail{display:flex;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;padding:8px 12px;border-right:0;border-bottom:1px solid var(--s-line);gap:6px}
+ #plate-studio .ps-rail-button{width:auto;min-width:54px;min-height:44px;flex-direction:row;font-size:18px;padding:8px}
+ #plate-studio .ps-rail-button span{font-size:11px}
+ #plate-studio .ps-rail-spacer{display:none}
+ #plate-studio .version{margin-left:auto;padding:8px}
+}
+@media(max-width:650px){
+ #plate-studio .ps-header-actions{width:100%;margin-left:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #plate-studio .ps-button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+ #plate-studio .ps-scene{height:340px}
+ #plate-studio #empty{padding:20px}
+ #plate-studio #empty h2{font-size:22px}
+ #plate-studio dialog{padding:18px;width:calc(100vw - 24px);max-height:calc(100dvh - 32px)}
+ #plate-studio .ps-candidate-label{flex-wrap:wrap;gap:8px}
+}

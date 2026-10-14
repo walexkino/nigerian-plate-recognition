@@ -2,6 +2,13 @@
 
 A local desktop research prototype by **Akinwale Awoyele**. The first working release reads visible plate text from images and sampled video frames, shows actual OCR scores, and supports human review.
 
+## App screenshot
+
+![PlateLab macOS app recognizing an invented plate in a synthetic road scene](docs/images/platelab-synthetic-demo.jpg)
+
+The screenshot shows a successfully built macOS app using a fully synthetic demonstration image with the invented plate `ABC 123 DE`. It is an interface demonstration, not a measurement of accuracy on the research dataset.
+
+
 ## Current implementation
 
 - Native macOS `.app`, built with Swift, WKWebView and Apple's on-device Vision OCR.

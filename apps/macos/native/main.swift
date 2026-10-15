@@ -40,6 +40,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
         var importing = false
         var videoURL: URL?
         let liveFeed = LiveFeed()
+        let weather = WeatherService()
         func deliver(_ function: String, _ payload: [String: Any]) {
             guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
             web.evaluateJavaScript("window.\(function)(\(json))", completionHandler: nil)
@@ -55,7 +56,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
             editItem.submenu = editMenu
             NSApp.mainMenu = menu
             let controller = WKUserContentController()
-            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress"] { controller.add(self, name: name) }
+            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource"] { controller.add(self, name: name) }
             let configuration = WKWebViewConfiguration(); configuration.userContentController = controller
             configuration.mediaTypesRequiringUserActionForPlayback = []
             web = WKWebView(frame: .zero, configuration: configuration); web.uiDelegate = self
@@ -67,12 +68,15 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
             NSApp.activate(ignoringOtherApps: true)
         }
         func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
-        func applicationWillTerminate(_ notification: Notification) { liveFeed.stop() }
+        func applicationWillTerminate(_ notification: Notification) { liveFeed.stop(); weather.cancel() }
         func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
             let panel = NSOpenPanel(); panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
             panel.begin { response in completionHandler(response == .OK ? panel.urls : nil) }
         }
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if message.name.hasPrefix("weather"), let body = message.body as? [String: Any], let id = body["id"] as? String {
+                weather.handle(message.name, body) { result in self.deliver("nativeResult", result.merging(["id": id]) { _, new in new }) }; return
+            }
             if ["supportWallet", "copySupportAddress"].contains(message.name) {
                 guard let body = message.body as? [String: Any], let id = body["id"] as? String else { return }
                 let address = "3DhdtBbkE7TsiZzAU5JJuV3M7dYzygj8R2"

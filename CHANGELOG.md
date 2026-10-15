@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 / Android 0.4.0 — 2026-10-15
+
+- Add optional local weather with one-shot approximate location and city search on both platforms.
+- Show current modeled conditions, feels-like temperature, humidity, wind, and a three-day forecast with highs/lows and rain probability.
+- Add forecast timestamps, explicit refresh, provider attribution, missing-data handling, and offline/permission error states.
+- Keep weather independent of plate reports and on-device OCR; round coordinates and avoid background tracking or persistent weather-location storage.
+- Update macOS location descriptions and Android internet/approximate-location permissions.
+- Increment macOS to build 6 and Android to version code 5.
+
 ## Repository organization — 2026-10-14
 
 - Separate platform code, builds, and tests into `apps/macos/` and `apps/android/`.

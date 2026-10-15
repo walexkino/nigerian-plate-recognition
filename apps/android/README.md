@@ -1,4 +1,4 @@
-# PlateLab for Android — 0.3.1
+# PlateLab for Android — 0.4.0
 
 A native Android prototype with bundled ML Kit Latin text recognition, photo import, live phone-camera sampling, manual transcription, review, and JSON export. The macOS release remains separate.
 
@@ -21,7 +21,7 @@ Finishing or skipping is remembered across launches. The current step survives a
 - Export JSON to a location selected in Android's document picker. Export includes original OCR, selected candidate, manual transcription, and review status.
 - PlateLab branding and direct Bitcoin support via a QR code, wallet URI, or copy address. Donations are confirmed in the user's wallet; the app does not verify completion.
 
-Photo and camera processing runs on the device using the bundled recognition model. Internet and network-state permissions are removed from the merged app manifest. No API key, paid inference service, Google Play registration, or login is required to build and install locally.
+Photo and camera processing runs on the device using the bundled recognition model. Optional weather uses the internet permission and requests approximate foreground location only when Use my location is selected. Location access is not required for OCR; city search works without it. No API key, paid inference service, Google Play registration, or login is required to build and install locally.
 
 This Android prototype does **not** support imported video files or RTSP/IP-camera feeds. It has not been evaluated for highway recognition accuracy. The model differs from Apple Vision, so results and OCR scores will differ from the macOS app. Recognition requires a clear, sufficiently large view of visible characters.
 
@@ -61,9 +61,13 @@ Camera permission is requested only when Start camera is selected. Camera captur
 
 History contains plate text and timestamps. Clearing this app's storage or uninstalling it removes local history. Export important results beforehand. System screenshots, exported reports, and activity in other applications are outside the app's private-history storage.
 
+## Local weather
+
+Tap **Local weather** near the theme button, then **Use my location**, or search for and select a city. Current modeled conditions and a three-day forecast include temperature, feels-like, wind, humidity, highs/lows, and rain probability, with the forecast time and timezone. Coordinates are rounded before Open-Meteo requests; no weather location is stored on disk or included in plate reports. Missing values display as unavailable. Requests are canceled when the panel closes or the app leaves the foreground. See the root README for attribution, data flow and noncommercial API terms.
+
 ### Verified local build
 
-The Android 0.3.1 APK was compiled with SDK 36 and checked with 8 Java unit tests and Android lint (no errors). Android 15 emulator tests verified the bundled OCR model on a generated plate, photo decoding and recognition, manual review/persistence, history after a new activity launch, and live synthetic-camera processing with pause retaining its original frame. A physical phone has not yet been tested.
+The Android 0.4.0 APK was compiled with SDK 36 and checked with 13 Java unit tests and Android lint (no errors). Android 15 emulator tests verified the bundled OCR model on a generated plate, photo decoding and recognition, manual review/persistence, history after a new activity launch, and live synthetic-camera processing with pause retaining its original frame. A physical phone has not yet been tested.
 
 On this Mac, `python3 apps/android/scripts/build.py --check` uses the approved project-local SDK/JDK tools and copies the signed test APK and SHA-256 checksum to `dist/android/`.
 

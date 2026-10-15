@@ -25,8 +25,8 @@ app = args.output.resolve()/'Contents'
 resources = app/'Resources'; binary = app/'MacOS'
 resources.mkdir(parents=True, exist_ok=True); binary.mkdir(parents=True, exist_ok=True)
 target = f'{platform.machine()}-apple-macosx13.0'
-subprocess.run(['swiftc','-O','-target',target,str(root/'apps/macos/native/main.swift'),str(root/'apps/macos/native/Recognition.swift'),str(root/'apps/macos/native/LiveFeed.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/macos/module-cache')],check=True)
-for filename in ['index.html','style.css','live.css','core.js','release.js','support.js','support-qr.svg','theme.js','app.js']:
+subprocess.run(['swiftc','-O','-target',target,str(root/'apps/macos/native/main.swift'),str(root/'apps/macos/native/Recognition.swift'),str(root/'apps/macos/native/LiveFeed.swift'),str(root/'apps/macos/native/Weather.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/macos/module-cache')],check=True)
+for filename in ['index.html','style.css','live.css','core.js','release.js','support.js','support-qr.svg','theme.js','app.js','weather.js','weather.css']:
     shutil.copy2(root/'apps/macos/ui'/filename,resources/filename)
 # Finder and the Dock need a native multi-resolution icon, including Retina sizes.
 icon_source = root/'shared/branding/platelab-icon.png'
@@ -71,6 +71,6 @@ if decoder:
 else:
     print('Live feeds disabled: install apps/macos/requirements-live.txt and rebuild to bundle FFmpeg.')
 with (app/'Info.plist').open('wb') as f:
-    plistlib.dump(dict(CFBundleName='PlateLab',CFBundleDisplayName='PlateLab',CFBundleIdentifier=args.bundle_id,CFBundleVersion=str(release['build']),CFBundleShortVersionString=release['version'],CFBundleExecutable='PlateLab',CFBundleIconFile='PlateLab.icns',CFBundlePackageType='APPL',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True),f)
+    plistlib.dump(dict(CFBundleName='PlateLab',CFBundleDisplayName='PlateLab',CFBundleIdentifier=args.bundle_id,CFBundleVersion=str(release['build']),CFBundleShortVersionString=release['version'],CFBundleExecutable='PlateLab',CFBundleIconFile='PlateLab.icns',CFBundlePackageType='APPL',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSLocationUsageDescription='PlateLab uses your approximate location only when you request a local weather forecast.',NSLocationWhenInUseUsageDescription='Show local weather using your approximate location when you choose Use my location.'),f)
 subprocess.run(['codesign','--force','--deep','--sign','-',str(app.parent)],check=True)
 print(app.parent)

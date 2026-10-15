@@ -49,3 +49,7 @@ build/macos/appearance-webkit "$PWD/apps/macos/ui" "$PWD/outputs/audit"
 ```
 
 Text history is held in memory on macOS; export important readings before quitting. Recognition scores are uncalibrated and all candidates need review. See the root README and research guides for limitations.
+
+## Local weather
+
+Choose **Weather** in the navigation. Use approximate location after granting permission, or search for and select a city. Current modeled conditions and the next three days use Open-Meteo over HTTPS. Temperature uses °C and wind uses km/h. Location is rounded to two decimal places before transmission and is not saved in recognition reports or on disk. Weather needs internet; OCR remains local. See the root README for attribution, privacy, and the free noncommercial API terms.

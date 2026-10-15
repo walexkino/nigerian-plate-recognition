@@ -2,7 +2,7 @@
 
 Local licence-plate recognition prototypes for **macOS and Android**, by **Akinwale Awoyele**. Both apps read visible plate text, show recognizer evidence, and support human review. They have separate native implementations and build processes.
 
-Current release: **0.3.1**, macOS build **5**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
+Current release: **0.4.0**, macOS build **6**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
 
 The custom application icon is stored in `shared/branding/platelab-icon.png`. The build script creates the standard and Retina `.icns` sizes and registers the icon in the macOS bundle.
 
@@ -24,7 +24,7 @@ Each app is self-contained. macOS uses Apple Vision and Android uses bundled ML 
 | Platform | Source and setup | Local package |
 | --- | --- | --- |
 | macOS | [macOS app](apps/macos/README.md) | `dist/macos/PlateLab.app` |
-| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.3.1.apk` |
+| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.4.0.apk` |
 
 ## App screenshot
 
@@ -83,6 +83,14 @@ python3 apps/macos/scripts/dev_server.py
 # Visit http://127.0.0.1:58070
 ```
 
+## Local weather
+
+Select **Weather** in the macOS navigation or **Local weather** near the Android appearance button. Choose **Use my location** and grant location permission, or search for a city and select the correct result. The section shows current modeled conditions, temperature and feels-like temperature in °C, wind in km/h, humidity, and a three-day forecast with daily highs/lows and rain probability. Refresh fetches a new forecast for the selected area; the provider's local forecast time and timezone are shown.
+
+Weather is optional and requires internet. Coordinates are rounded to two decimal places before forecast requests; location or city queries go to Open-Meteo, which also receives the request IP address. This feature does not add location or weather to recognition reports or save a weather location to disk. Android requests approximate foreground location only; there is no background-location permission. Closing weather or leaving the Android app cancels pending work. Denied/unavailable location, offline access, missing data, and service failures offer retry or city search; old forecasts are identified as previous data. OCR continues to work offline.
+
+Weather data: [Open-Meteo](https://open-meteo.com/), [CC BY 4.0](https://open-meteo.com/en/licence); geocoding: GeoNames via Open-Meteo. This prototype uses the free **noncommercial** API without an API key. Commercial deployment or larger usage requires reviewing the provider's [terms and limits](https://open-meteo.com/en/terms); no paid service has been registered.
+
 ## Support PlateLab
 
 Select **Support us** to donate BTC to `3DhdtBbkE7TsiZzAU5JJuV3M7dYzygj8R2`. Scan the QR code with a Bitcoin wallet, or copy the address. In the native macOS app, **Open Bitcoin wallet** opens an installed handler for the Bitcoin payment URI; if none is available, the panel shows the QR/copy alternatives. The browser preview stays on the panel instead of sending Safari to an unsupported address.
@@ -137,6 +145,6 @@ See `research/submission_guide.md` for today's demonstration and `research/exper
 
 ## Android prototype
 
-The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.3.1, with saved light/dark appearance and a first-launch guided tour. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
+The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.4.0, with saved light/dark appearance and a first-launch guided tour. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
 
 © 2026 Akinwale. The source code is available under the [MIT License](LICENSE).

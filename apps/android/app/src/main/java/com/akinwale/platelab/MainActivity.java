@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout workspaceHost;
     private OnboardingTour tour;
     private Button supportButton;
+    private WeatherPanel weather;
+    private final ActivityResultLauncher<String> askWeatherLocation=registerForActivityResult(new ActivityResultContracts.RequestPermission(),granted->{if(weather!=null)weather.permissionResult(granted);});
     private static final String TOUR_POSITION="tour_position";
     private Button themeButton;
     private final Map<android.graphics.drawable.GradientDrawable,Integer> themedSurfaces=new WeakHashMap<>();
@@ -114,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         scroll.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{int available=scroll.getWidth()-scroll.getPaddingLeft()-scroll.getPaddingRight();int width=Math.min(available,dp(900));if(width>0&&root.getLayoutParams().width!=width){root.getLayoutParams().width=width;root.requestLayout();}});workspaceHost=new FrameLayout(this);workspaceHost.addView(scroll,new FrameLayout.LayoutParams(-1,-1));setContentView(workspaceHost);
         ViewCompat.setOnApplyWindowInsetsListener(scroll,(view,insets)->{androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars());view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});
         LinearLayout brand=row();ImageView logo=new ImageView(this);logo.setImageResource(R.mipmap.ic_launcher_image);logo.setContentDescription("PlateLab logo");brand.addView(logo,new LinearLayout.LayoutParams(dp(42),dp(42)));
-        title=text("PlateLab",24,INK);title.setTypeface(null,Typeface.BOLD);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.setMarginStart(dp(10));brand.addView(title,tp);brand.addView(text("v"+BuildConfig.VERSION_NAME,11,MUTED));root.addView(brand);space(root,12);themeButton=button("Light mode",false,this::toggleTheme);root.addView(themeButton,new LinearLayout.LayoutParams(-1,-2));space(root,20);
+        title=text("PlateLab",24,INK);title.setTypeface(null,Typeface.BOLD);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.setMarginStart(dp(10));brand.addView(title,tp);brand.addView(text("v"+BuildConfig.VERSION_NAME,11,MUTED));root.addView(brand);space(root,12);themeButton=button("Light mode",false,this::toggleTheme);pair(root,themeButton,button("Local weather",false,this::showWeather));space(root,20);
         root.addView(text("NIGERIAN PLATE RECOGNITION",11,MINT));space(root,6);root.addView(text("Recognition workspace",24,INK));space(root,8);
         root.addView(text("Read the evidence. Review every character.",13,MUTED));space(root,20);
         LinearLayout scene=column();scene.setPadding(dp(12),dp(12),dp(12),dp(12));scene.setBackground(surface(PANEL,18));
@@ -227,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private void replayTour(){if(loading||photoBusy||frameBusy.get()){status.setText("Wait for the current reading to finish, then replay the tour.");return;}stopCamera();showTour(OnboardingTour.WELCOME);}
     @Override protected void onSaveInstanceState(Bundle out){if(tour!=null&&tour.isShowing())out.putInt(TOUR_POSITION,tour.position());super.onSaveInstanceState(out);}
+    private void showWeather(){if(tour!=null&&tour.isShowing())return;if(live||cameraStarting)stopCamera();if(weather!=null)weather.close();weather=new WeatherPanel(this,dark,()->askWeatherLocation.launch(Manifest.permission.ACCESS_COARSE_LOCATION));weather.show();}
     private void about(){new androidx.appcompat.app.AlertDialog.Builder(dialogContext()).setTitle("PlateLab for Android").setMessage("Version "+BuildConfig.VERSION_NAME+" · Akinwale Awoyele\n© 2026 Akinwale\n\nBundled ML Kit reads visible text on your phone. Plate formatting is a heuristic; it does not verify registration or recover hidden characters. Review every reading.\n\nCamera mode processes the latest frame up to once per second. This version supports photos and the phone camera; video files and RTSP cameras are not connected yet.\n\nText history is saved in this app's private storage. Photos are not retained in history. Exports are saved only where you choose.").setNeutralButton("Replay tour",(dialog,which)->replayTour()).setPositiveButton("Close",null).show();}
     private void support(){
         String address="3DhdtBbkE7TsiZzAU5JJuV3M7dYzygj8R2";LinearLayout panel=column();panel.setPadding(dp(24),dp(12),dp(24),dp(12));ImageView qr=new ImageView(this);qr.setContentDescription("Bitcoin donation QR code");
@@ -235,8 +238,9 @@ public class MainActivity extends AppCompatActivity {
         ScrollView supportScroll=new ScrollView(this);supportScroll.addView(panel);
         new androidx.appcompat.app.AlertDialog.Builder(dialogContext()).setTitle("Support PlateLab").setMessage("Help build what comes next.").setView(supportScroll).setPositiveButton("Open wallet",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("bitcoin:"+address)));}catch(ActivityNotFoundException e){new androidx.appcompat.app.AlertDialog.Builder(dialogContext()).setMessage("No Bitcoin wallet is installed. Use Support us to scan the QR code or copy the address.").setPositiveButton("Close",null).show();}}).setNeutralButton("Copy address",(d,w)->{android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);clipboard.setPrimaryClip(ClipData.newPlainText("Bitcoin address",address));status.setText("Bitcoin address copied.");}).setNegativeButton("Close",null).show();
     }
-    @Override protected void onStop(){stopCamera();super.onStop();}
-    @Override protected void onDestroy(){if(tour!=null)tour.dispose();generation++;if(cameraProvider!=null)cameraProvider.unbindAll();recognizer.close();worker.shutdown();super.onDestroy();}
+    @Override protected void onStart(){super.onStart();if(weather!=null)weather.resume();}
+    @Override protected void onStop(){if(weather!=null)weather.suspend();stopCamera();super.onStop();}
+    @Override protected void onDestroy(){if(weather!=null)weather.close();if(tour!=null)tour.dispose();generation++;if(cameraProvider!=null)cameraProvider.unbindAll();recognizer.close();worker.shutdown();super.onDestroy();}
     private final class BoxOverlay extends View {
         private List<PlateRules.Reading> boxes=Collections.emptyList();private int frameWidth=1,frameHeight=1;private final Paint pen=new Paint(Paint.ANTI_ALIAS_FLAG);
         BoxOverlay(Context context){super(context);pen.setColor(MINT);pen.setStyle(Paint.Style.STROKE);pen.setStrokeWidth(dp(2));}

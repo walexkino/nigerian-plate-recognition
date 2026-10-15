@@ -1,6 +1,6 @@
 # Research and dataset tools
 
-This folder contains project-authored research guides, dataset auditing and benchmark scripts, and their Python requirements. It does not contain a published journal paper, dataset photographs, or model weights.
+This folder contains project-authored research guides, dataset auditing and benchmark scripts, and their Python requirements. The [IEEE-style manuscript draft](manuscript/README.md), by Akinwale Awoyele, includes a mathematical framework and a compiled PDF. It is not a peer-reviewed or accepted journal paper. Dataset photographs and model weights are not included.
 
 Run scripts from the repository root so their ignored `data/` and `outputs/` paths resolve correctly:
 

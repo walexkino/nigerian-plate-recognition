@@ -1,0 +1,58 @@
+{
+  "manuscript_date": "2026-10-15",
+  "author": "Akinwale Awoyele",
+  "implementation_revision_inspected": "9eda1c0457e24539ec7caa01780c975fb07426fb",
+  "dataset_audit": {
+    "record_date": "2026-10-13",
+    "inventory_jpeg_entries": 564,
+    "available_decoded_images": 154,
+    "width_pixels": 699,
+    "height_pixels": 466,
+    "exact_duplicate_pairs": 6,
+    "unique_byte_hashes": 148,
+    "ground_truth_transcriptions_available": false,
+    "vehicle_identity_groups_available": false,
+    "natural_occlusion_labels_available": false,
+    "sampling": "Partial subset in inventory/download-availability order; not random or representative.",
+    "source": "research/dataset_card.md"
+  },
+  "historical_macos_timing": {
+    "record_date": "2026-10-13",
+    "images": 154,
+    "completed_processes": 154,
+    "median_ms": 142.89947898942046,
+    "p95_ms": 155.82225000252947,
+    "p95_convention": "Sorted zero-based index min(N-1, floor(0.95*N)).",
+    "max_child_rss_mib": 54.84375,
+    "host_single_post_image_rss_snapshot_mib": 114.27,
+    "hardware_author_reported": "MacBook, Apple M5, 24 GB RAM; not independently verified in the archived record.",
+    "sources": [
+      "research/validation.md",
+      "outputs/audit/benchmark_summary.json",
+      "research/scripts/benchmark_baseline.py"
+    ],
+    "limitations": [
+      "Each image launched a fresh OCR process; timing includes startup.",
+      "No accuracy, calibrated confidence, or occlusion robustness was measured.",
+      "Child RSS and one host RSS snapshot are not complete application peak memory and must not be added as such.",
+      "Video decoding, live transport, graphics and separate WebKit services are excluded.",
+      "Archive lacks a complete code/backend/OS version manifest; these are not measurements of every current release feature.",
+      "Image subset includes duplicates and was not sampled representatively."
+    ]
+  },
+  "implemented": [
+    "macOS Apple Vision OCR, alternatives and multi-view candidate ranking",
+    "macOS imported video and RTSP latest-frame sampling without vehicle association or temporal fusion",
+    "Android bundled ML Kit image and phone-camera recognition",
+    "Manual review and JSON export"
+  ],
+  "proposed_not_trained_or_evaluated": [
+    "CRNN-CTC recognizer",
+    "Visibility estimation and occlusion-aware supervised training",
+    "Same-identity tracked-frame distribution pooling",
+    "Calibrated complete-plate correctness and automatic acceptance"
+  ],
+  "recognition_accuracy": null,
+  "occlusion_improvement": null,
+  "private_assets_included": false
+}

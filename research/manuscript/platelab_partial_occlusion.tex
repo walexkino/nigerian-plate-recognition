@@ -1,0 +1,282 @@
+\RequirePackage[T1]{fontenc}
+\documentclass[journal]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\calY}{\mathcal{Y}}
+\hyphenation{rec-og-ni-tion oc-clu-sion data-set data-sets}
+
+\begin{document}
+\title{Nigerian License Plate Recognition Under Partial Occlusion: A Local Prototype and Mathematical Framework}
+\author{Akinwale~Awoyele}
+\maketitle
+
+\begin{abstract}
+Partial occlusion makes license plate recognition ambiguous when distinguishing character information is hidden. This article describes PlateLab, a local macOS and Android prototype, and develops a mathematical framework for a subsequent controlled study of Nigerian license plates. The implemented system uses existing optical character recognition engines, preserves alternative readings, and supports manual review. Its macOS candidate-ranking rule is formalized separately from a proposed convolutional recurrent recognizer with connectionist temporal classification, visibility supervision, tracked-frame aggregation, and selective prediction. An observation model distinguishes visible evidence from assumptions about plate format and explains why fully hidden characters cannot always be identified uniquely. A partial dataset audit found 154 available images and 148 distinct byte hashes, without verified transcriptions or occlusion labels. An archived macOS timing run recorded a median cold-process latency of 142.9 ms and a 95th percentile of 155.8 ms. These figures describe execution time rather than recognition accuracy. An evaluation protocol specifies identity-disjoint partitions, natural and synthetic occlusion tests, exact-match accuracy, character error rate, risk versus coverage, and resource measurements. The article establishes an implemented review workflow and testable research formulation; trained-model accuracy, calibration, and improvements under occlusion remain to be demonstrated.
+\end{abstract}
+
+\begin{IEEEkeywords}
+License plate recognition, partial occlusion, optical character recognition, connectionist temporal classification, selective prediction.
+\end{IEEEkeywords}
+
+\section{Introduction}
+\IEEEPARstart{L}{icense} plate recognition requires both locating relevant text and reading a complete identifier. A plate that is small, blurred, oblique, or partly covered may produce several plausible transcriptions. Accepting a plausible string without retaining the underlying evidence can conceal an error, particularly when a recognizer's score is interpreted as certainty about the entire identifier. This study focuses on Nigerian plate imagery while making no assumption that a single character layout describes every valid plate.
+
+Existing plate-recognition research demonstrates the importance of capture conditions. Silva and Jung~\cite{silva2018} combine plate detection and rectification for unconstrained views. Laroca \emph{et al.}~\cite{laroca2018} develop a detector-based recognition pipeline and evaluate it on vehicle imagery. Neither study's reported performance can be transferred to the present, incompletely annotated collection without a matched experiment.
+
+The research question is: how can a local recognition workflow preserve uncertainty under partial occlusion, and what measurements are needed to establish whether a visibility-aware sequence model improves its decisions? The present contribution is a documented prototype, a formal description of its evidence aggregation, and a proposed mathematical and experimental framework. It is not a claim of a newly trained recognizer or a completed occlusion benchmark.
+
+The distinction is maintained throughout the article. Section~\ref{sec:related} places the design in context. Section~\ref{sec:observation} defines the observation problem. Section~\ref{sec:implemented} formalizes implemented behavior, whereas Section~\ref{sec:proposed} describes unimplemented research models. Sections~\ref{sec:protocol} and~\ref{sec:results} separate the planned evaluation from available measurements. Section~\ref{sec:discussion} discusses the limits of the evidence.
+
+\section{Related Work}\label{sec:related}
+Detection and rectification address geometric variation before transcription~\cite{silva2018}. A staged detector-based system also requires validation across cameras and moving vehicles~\cite{laroca2018}. These studies motivate reporting localization and end-to-end recognition separately. The current application instead uses general-purpose text recognition and user-selected regions; its text boxes are not evidence of a trained plate detector.
+
+Shi, Bai, and Yao~\cite{shi2017} combine convolutional features, recurrent sequence modeling, and transcription in a convolutional recurrent neural network (CRNN). Connectionist temporal classification (CTC), introduced by Graves \emph{et al.}~\cite{graves2006}, sums over possible alignments between a feature sequence and a target string. These established methods supply a suitable proposed baseline, rather than a novelty claim for PlateLab.
+
+Confidence calibration and abstention address a different question from transcription. Guo \emph{et al.}~\cite{guo2017} study the relationship between neural-network confidence and correctness. Geifman and El-Yaniv~\cite{geifman2017} study selective classification, in which a classifier can reject inputs to trade coverage for risk. The present protocol adopts these evaluation ideas without assuming that proprietary OCR scores satisfy their conditions. The deployed backends are Apple's Vision text-recognition interface~\cite{applevision} and Google's bundled ML Kit text recognizer~\cite{mlkit}; their internal models are not specified or retrained in this project.
+
+\section{Observation Model and Identifiability}\label{sec:observation}
+Let $y=(y_1,\ldots,y_L)$ be a plate identifier of length $L$, with characters in $\calA=\{A,\ldots,Z,0,\ldots,9\}$. This alphabet describes the current prototype's normalized identifier field, not every inscription or script appearing on a plate. Let $J_y$ be an ideal plate image on an aligned grid $\Omega$. A simplified model of the observed crop is
+\begin{equation}\label{eq:formation}
+ X=\calD\!\left(K*\left[M\odot J_y+(1-M)\odot O\right]\right)+\epsilon,
+\end{equation}
+where $M(u,v)\in[0,1]$ is visibility, $O$ is occluding appearance, $K$ is a blur kernel, $\calD$ is sampling, and $\epsilon$ is noise. The symbol $\odot$ denotes pixelwise multiplication and $*$ convolution. This is an explanatory image-formation model, not a fitted model of the supplied camera. Residual perspective and illumination variation would require additional parameters. Actual plate rectification is not implemented by the application.
+
+The plate-area occlusion fraction and a character-specific fraction are
+\begin{align}
+ \rho &= 1-\frac{1}{|\Omega|}\sum_{(u,v)\in\Omega}M(u,v),\label{eq:rho}\\
+ \rho_j &= 1-\frac{1}{|G_j|}\sum_{(u,v)\in G_j}M(u,v),\label{eq:rhochar}
+\end{align}
+where $G_j$ is an annotated character region. Plate-area coverage alone can be misleading: covering background and covering a distinguishing stroke have different effects. Natural masks and $G_j$ are not currently available and must be annotated before these quantities are reported.
+
+An identifiability limit follows directly. If two different identifiers $y\ne y'$ have identical visible renderings,
+\begin{equation}\label{eq:ambiguity}
+ M\odot J_y=M\odot J_{y'},
+\end{equation}
+and all remaining observation parameters and noise distributions are equal, their observation likelihoods are equal. Thus, for positive priors and a possible observation $X$,
+\begin{equation}\label{eq:odds}
+ \frac{P(y\mid X,M)}{P(y'\mid X,M)}
+ =\frac{P(y\mid M)}{P(y'\mid M)}.
+\end{equation}
+A format preference can change the posterior odds through a prior, but cannot create distinguishing visual evidence. Additional, correctly associated frames may reveal that evidence; identical reprocessing of one frame cannot guarantee recovery of a hidden character.
+
+\section{Implemented Prototype}\label{sec:implemented}
+\subsection{Native Recognition and Evidence Retention}
+PlateLab has separate macOS and Android implementations~\cite{platelab}. macOS uses Vision with accurate recognition, English recognition settings, and language correction disabled. It requests up to three alternatives per text observation. The image workflow processes original, scaled, and red-channel contrast views, then selected region crops. When suitable regions are absent, overlapping tiles provide a fallback. These operations filter or resample existing pixels; they do not synthesize missing text.
+
+Android uses bundled ML Kit for photographs and sampled phone-camera frames. It retains text observations and a review history. It does not implement the macOS multi-pass pipeline, imported-video workflow, or RTSP decoder. Consequently, macOS timing and ranking behavior must not be attributed to Android. Table~\ref{tab:status} identifies the research boundary.
+
+\begin{table}[t]
+\caption{Implementation and research status}
+\label{tab:status}
+\centering\footnotesize
+\setlength{\tabcolsep}{8pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.43\columnwidth}>{\raggedright\arraybackslash}p{0.47\columnwidth}@{}}
+\toprule
+Component & Status \\
+\midrule
+Native OCR, alternatives, manual review, JSON export & Implemented; different platform backends \\
+Multi-view candidate ranking & Implemented on macOS \\
+RTSP frame sampling & Implemented on macOS; no vehicle tracking \\
+CRNN--CTC and visibility learning & Proposed; no training or evaluation \\
+Tracked-frame probability aggregation & Proposed; no association model \\
+Calibrated automatic acceptance & Proposed; no calibration labels \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Candidate Grouping and Ranking}
+The following formalizes the current macOS rule. Text is normalized to uppercase Latin letters and digits; a limited set of Unicode lookalikes is mapped. Letter--digit substitutions such as $O\leftrightarrow0$ are not inferred. Candidate identifiers must satisfy a heuristic pattern with two or three leading letters, two to four digits, one to three trailing letters, and a total length of seven to nine. This is a software filter, not an authoritative registration specification; it may reject valid nonstandard plates.
+
+For boxes $b$ and $b'$, the grouping overlap is
+\begin{equation}\label{eq:overlap}
+ o(b,b')=\frac{|b\cap b'|}{\max(10^{-9},\min(|b|,|b'|))}.
+\end{equation}
+The implementation assigns an observation to the first existing group whose representative box has $o>0.35$, or creates a new group. This sequential grouping can depend on observation order; it is not intersection-over-union clustering. Compatible adjacent fragments from the same pass may also be joined using spatial thresholds documented in the source.
+
+Within one group, each pass contributes at most one selected top reading $v_p$. The selection prefers a common layout and then the raw OCR score. Let $\mathcal{V}$ be the resulting set of passes, $\ell(y)$ indicate either of the common layouts \texttt{ABC123DE} and \texttt{AB123CDE}, and $c_{\max}(y)$ be the largest raw score among observations for $y$. Candidate support and rank are
+\begin{align}
+ s(y)&=\sum_{p\in\mathcal{V}}\ind\{v_p=y\},\label{eq:support}\\
+ r(y)&=100s(y)+10\ell(y)+c_{\max}(y).\label{eq:rank}
+\end{align}
+These constants describe the implemented ordering rather than learned weights. For a displayed character $y_j$, agreement is counted only among selected readings of the same length:
+\begin{equation}\label{eq:character}
+ a_j(y)=\sum_{p\in\mathcal{V}}\ind\{|v_p|=|y|,\ (v_p)_j=y_j\}.
+\end{equation}
+Its denominator is the number of such same-length readings; if none exist, agreement is unavailable. Alternatives from one pass do not count as independent votes. Neither $r(y)$ nor a character-agreement fraction is a calibrated probability, because the views share pixels and the recognizer.
+
+\subsection{Video and Review Workflow}
+macOS decodes imported video sequentially and samples up to once per second, with a 120-frame run limit. Live RTSP mode processes the newest sampled frame without building a recognition backlog. Its rate is therefore bounded by both sampling and processing time. The working frame is capped at 1280 pixels on its longest side. Neither workflow associates plate identities across time or implements temporal fusion.
+
+Raw text, alternatives, scores, and review decisions are retained separately. Manual transcription does not overwrite the raw OCR evidence. This distinction makes correction auditable but has not yet been evaluated in a controlled human-review study. All current readings require review; no calibrated automatic acceptance threshold has been established.
+
+\section{Proposed Mathematical Research Framework}\label{sec:proposed}
+\textit{All models in this section are proposed research components. They are not trained models or measured improvements in the current apps.}
+
+\subsection{Sequence Recognition With CTC}
+Following the CRNN design~\cite{shi2017}, convolutional features $F=\phi_\theta(X)$ are arranged as a horizontal sequence. A bidirectional recurrent encoder produces $h_t$, followed by logits $z_t=W h_t+b$. With blank symbol $\varnothing$, each of $T$ feature steps has distribution
+\begin{equation}\label{eq:softmax}
+ p_t(k\mid X)=\frac{\exp(z_{t,k})}
+ {\sum_{k'\in\calA\cup\{\varnothing\}}\exp(z_{t,k'})}.
+\end{equation}
+CTC~\cite{graves2006} sums paths $\pi$ whose collapse $B$ merges consecutive repetitions and then removes blanks:
+\begin{align}
+ P_\theta(y\mid X)&=\sum_{\pi:B(\pi)=y}\prod_{t=1}^{T}p_t(\pi_t\mid X),\label{eq:ctc}\\
+ \mathcal{L}_{\mathrm{CTC}}(X,y)&=-\log P_\theta(y\mid X).\label{eq:ctcloss}
+\end{align}
+For example, the path $(A,A,\varnothing,A)$ collapses to $AA$, preserving a repeat separated by a blank. Best-path decoding is only an approximation to the most probable string; beam width and any format constraints must be disclosed. This model's conditional path factorization is not an assumption that video frames or preprocessing passes are independent.
+
+\subsection{Visibility Supervision and Occlusion Augmentation}
+A proposed visibility head predicts $\widehat M=\sigma(g_\psi(X))$, where $\sigma$ is the logistic function. A mask-conditioned recognizer would consume $[X,\widehat M]$ as image and visibility channels; the baseline omits the mask. For a binary training visibility mask $M$, a possible supervised loss is
+\begin{equation}\label{eq:maskloss}
+\begin{split}
+ \mathcal{L}_{\mathrm{vis}}=-\frac{1}{|\Omega|}\sum_{(u,v)\in\Omega}
+ \big[&M_{uv}\log\widehat M_{uv}\\
+ &+(1-M_{uv})\log(1-\widehat M_{uv})\big].
+\end{split}
+\end{equation}
+Implementations must use numerically stable logits or clipped probabilities. Natural visibility requires separate ground truth; a recognizer's uncertainty cannot be relabeled as a true occlusion mask.
+
+For a source with an independently verified complete identifier, let $X^a$ be a synthetically occluded version with known mask $M^a$. One candidate training objective is
+\begin{equation}\label{eq:objective}
+\begin{split}
+ \mathcal{L}={}&\E_{(X,y)\sim\calD_{\mathrm{tr}}}
+ \big[\mathcal{L}_{\mathrm{CTC}}(X,y)\\
+ &+\lambda_a\E_{a}\mathcal{L}_{\mathrm{CTC}}(X^a,y)
+ +\lambda_v\E_a\mathcal{L}_{\mathrm{vis}}(X^a,M^a)\big]\\
+ &+\lambda_r\|\theta\|_2^2 .
+\end{split}
+\end{equation}
+Here the CTC terms use the mask-conditioned recognizer when that variant is tested; the objective is optimized over recognition and visibility parameters jointly. All $\lambda$ values are nonnegative and selected using validation data. Synthetic visibility supervision requires verified fully visible source crops; an added mask on a naturally occluded crop is not a complete visibility target. Augmentations are generated within the training partition only. Irrecoverably obscured natural images without independently known complete labels are excluded from full-string supervised loss, while remaining eligible for abstention testing. Training on a complete label does not establish that the corresponding hidden information is identifiable at inference.
+
+\subsection{Proposed Aggregation Across Tracked Frames}
+Assume a future association stage has verified that crops $X_1,\ldots,X_n$ belong to the same vehicle and plate. This association assumption requires its own evaluation. To avoid multiplying correlated scores, a proposed baseline uses a weighted linear pool of sequence distributions:
+\begin{align}
+ \alpha_t&=\frac{w_t}{\sum_{u=1}^{n}w_u},\quad w_t\geq0,\quad\sum_uw_u>0,\label{eq:weights}\\
+ P_f(y)&=\sum_{t=1}^{n}\alpha_t P_\theta(y\mid X_t),\quad
+ \widehat y_f=\arg\max_{y\in\calY}P_f(y).\label{eq:fusion}
+\end{align}
+Weights may depend on validated image quality and estimated visibility, with temporal subsampling to reduce repeated near-identical evidence. This is a pooling rule, not an independence-based posterior or a guarantee of calibration. Candidate strings should be rescored in every crop; selecting only each frame's top string loses distributional information. The rule selects among full-string hypotheses and does not explicitly reconstruct characters by combining aligned strokes. If all frames hide the same distinguishing region, the ambiguity in~\eqref{eq:ambiguity} persists. Invalid association or zero total weight requires abstention.
+
+\subsection{Calibration and Selective Prediction}
+Let $q(X)$ be a separately validated estimate of complete-plate correctness. It must not be equated with $r(y)$, an uncalibrated OCR score, or a CTC sequence likelihood without calibration. A proposed acceptance policy is
+\begin{equation}\label{eq:accept}
+ d_\tau(X)=\ind\{q(X)\geq\tau\},
+\end{equation}
+with rejected cases returned for review. If usable sequence logits are available, temperature scaling~\cite{guo2017} can be evaluated on validation data; opaque backend scores may instead require a calibrated correctness model. Threshold selection and its uncertainty must follow a defined validation protocol~\cite{geifman2017}. No formal risk guarantee is asserted for PlateLab.
+
+\section{Data and Evaluation Protocol}\label{sec:protocol}
+\subsection{Available Collection and Annotation Requirements}
+The supplied inventory contains 564 JPEG entries. The available audit covers 154 decoded images, each $699\times466$ pixels, with six exact duplicate pairs and 148 unique byte hashes. The subset follows download availability and inventory order rather than random sampling. Ground-truth transcriptions, plate polygons, vehicle identities, and natural occlusion masks were not supplied. These counts describe a partial collection, not 154 independent labeled test plates.
+
+Required annotation separates (i) visible transcription, including uncertain characters; (ii) complete transcription only when independently established; (iii) plate corners; (iv) character regions and visibility; and (v) vehicle or plate identity. A second reader should adjudicate disagreements without treating model output as truth. Cases that remain unreadable need a distinct evaluation category rather than guessed labels.
+
+Exact duplicates, near duplicates, repeated vehicles, video tracks, and every derived version of a source must be grouped before assigning partitions. Training, validation, and test partitions must be identity-disjoint. No numerical split counts are specified because identity grouping is incomplete; freeze and report the resulting counts and hashes before experiments. No test identity may influence model selection, calibration, augmentation settings, or threshold choice.
+
+\subsection{Recognition and Localization Metrics}
+For $N$ evaluable labeled plate instances with references $y_i$ and outputs $\widehat y_i$, define
+\begin{align}
+ A_{\mathrm{plate}}&=\frac{1}{N}\sum_{i=1}^{N}\ind\{\widehat y_i=y_i\},\label{eq:accuracy}\\
+ \mathrm{CER}&=\frac{\sum_{i=1}^{N}\operatorname{ED}(\widehat y_i,y_i)}
+ {\sum_{i=1}^{N}|y_i|},\label{eq:cer}
+\end{align}
+where $\operatorname{ED}$ is character edit distance. Normalize formatting consistently without correcting predicted letter--digit errors. For the primary end-to-end accuracy, failed detections and abstentions remain failures. If an empty string represents an abstention for CER, its entire reference contributes deletions; accepted-only CER must be labeled separately. False positives on images without plates require a separate rate.
+
+For detection, match predicted and annotated plate regions using an explicitly fixed intersection-over-union threshold and one-to-one matching. Report precision and recall separately from recognition on ground-truth crops. Text-region grouping in~\eqref{eq:overlap} is not this detection metric.
+
+For selective prediction, $d_i=d_\tau(X_i)$ yields
+\begin{align}
+ C(\tau)&=\frac{1}{N}\sum_i d_i,\label{eq:coverage}\\
+ R(\tau)&=\frac{\sum_i d_i\ind\{\widehat y_i\ne y_i\}}
+ {\sum_i d_i},\qquad \sum_i d_i>0.\label{eq:risk}
+\end{align}
+Risk is undefined at zero coverage, not zero. Report risk--coverage curves, complete-plate reliability plots, and bootstrap confidence intervals resampled by identity or track. Frame-wise intervals that treat repeated vehicles as independent would understate uncertainty.
+
+\subsection{Occlusion Tests, Comparisons, and Resources}
+Report naturally occluded cases separately from controlled synthetic masks. Proposed severity intervals are $\rho=0$, $0<\rho\leq0.25$, $0.25<\rho\leq0.50$, and $0.50<\rho\leq1$; these are experimental bins, not observed dataset proportions. Include character coverage, blur, crop size, illumination, and viewpoint strata. Synthetic occluder shape, opacity, location, generation seed, and source identity must be recorded.
+
+Compare the unmodified backend, backend with manually or automatically supplied crops, implemented multi-view ranking, CRNN--CTC, and the proposed visibility-conditioned variant on matched partitions. For video, add verified same-identity tracks before comparing single-frame and pooled predictions. Ablate augmentation, the visibility head, frame weighting, and the format prior independently. Neither a moving inset of a photograph nor an app workflow test substitutes for real traffic evaluation.
+
+Measure cold and warm latency separately, with stated warmup, repeats, image sizes, and concurrency. For live recognition, measure capture-to-displayed-result delay, sampling rate, queue behavior, dropped frames, and full application peak memory. Record the processor, RAM, operating system, OCR dependency versions, code revision, model size, seeds, optimizer, learning schedule, and stopping rule. These specifications are requirements for subsequent experiments, not settings already used to train a model.
+
+\section{Available Prototype Measurements}\label{sec:results}
+Table~\ref{tab:timing} reproduces the archived October 13, 2026 timing record. Hardware was reported by the author as a MacBook with an Apple M5 and 24 GB RAM; the archive does not independently establish that configuration or retain a complete operating-system and recognizer-version manifest. Each of 154 available images was processed by a newly launched compiled macOS OCR process. All returned without process errors. No correctness rate can be calculated without ground truth.
+
+\begin{table}[t]
+\caption{Historical macOS timing record; not an accuracy study}
+\label{tab:timing}
+\centering\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+Measure & Recorded value \\
+\midrule
+Images / completed processes & 154 / 154 \\
+Input resolution & $699\times466$ pixels \\
+Median cold-process elapsed time & 142.9 ms \\
+95th percentile elapsed time & 155.8 ms \\
+Peak OCR child-process RSS & 54.84 MiB \\
+Host RSS, single post-image snapshot & 114.27 MiB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Elapsed time includes process startup. The archived script's 95th percentile selects zero-based sorted index $\lfloor0.95N\rfloor$, capped at $N-1$; this convention should accompany comparisons. Child memory was recorded using macOS \texttt{getrusage(RUSAGE\_CHILDREN)} and converted from bytes to MiB. The host snapshot used \texttt{ps}, converting KiB to MiB. Neither includes all WebKit, graphics, or OS-managed services. The two numbers must not be summed into a claimed complete application peak.
+
+The timing archive predates later recognition refinements and is not a benchmark of every feature in release 0.3.1. It excludes video decoding and live-camera transport. Its download-order sample and duplicate images further limit generalization. No Android timing comparison is available.
+
+Functional checks exercised image import, a 12-frame synthetic video, overlays, review, and JSON export. Early synthetic-video inspection produced incorrect readings despite a raw score of 100\%. A later two-image inspection found one visibly legible character recovered by additional processing and another small blurred plate with conflicting readings. These are qualitative observations, not a controlled improvement estimate. They motivate retaining alternatives and evaluating calibration, but do not quantify robustness.
+
+\section{Discussion and Limitations}\label{sec:discussion}
+The current evidence supports a narrower conclusion than reliable recovery under occlusion: a local application can run existing recognizers, expose conflicting evidence, and preserve human corrections separately. The proposed mathematical framework specifies how a future experiment could test recognition and abstention. It does not establish that the proposed additions outperform simpler cropping or existing plate-recognition methods.
+
+The incomplete collection is a major limitation. Exact-hash deduplication does not resolve near duplicates or vehicle identities. Inventory-order availability can bias lighting, position, and plate types. Without natural occlusion labels, neither prevalence nor severity-specific accuracy is known. Collection documentation, use permissions, and any applicable research review must be established before extending the study or releasing imagery; project-use authorization is not a documented public dataset license.
+
+The deployed general-purpose OCR engines also limit reproducibility across platform updates. A reference code revision alone does not freeze an operating-system-supplied model. The historic resource measurements cannot support a sustained highway throughput or full application memory claim. Future measurements must capture deployed versions and evaluate representative camera footage and association errors.
+
+Most importantly, confidence is not visibility. A network trained on typical identifiers may assign high probability to a string whose distinguishing region is absent. Format restrictions can improve apparent precision while excluding valid uncommon plates. The evaluation therefore retains abstentions and nonstandard layouts, distinguishes observable evidence from contextual hypotheses, and measures error at a stated coverage. Manual review also needs evaluation; human confirmation without independent evidence is not a proof of correctness.
+
+\section{Conclusion}
+PlateLab provides implemented native OCR and review workflows for Nigerian license plate imagery. This article formalizes the macOS candidate rule and proposes visibility-aware CRNN--CTC training, tracked-frame pooling, and calibrated abstention as testable extensions. The available audit and timing measurements establish execution and collection characteristics, while leaving accuracy and occlusion robustness unmeasured. Independent labels, identity-disjoint partitions, complete version records, and matched held-out experiments are required before claiming recovery improvements or dependable street-camera recognition.
+
+\section*{Acknowledgment}
+OpenAI Codex was used to draft and organize the abstract and Sections I--IX, formulate and typeset the mathematical framework, and prepare the tables and references from project records and primary sources. This assistance does not supply independent experimental evidence. Author review and approval of the scientific content remain necessary before submission.
+
+\section*{Code and Data Availability}
+Application source, aggregate project documentation, and this manuscript source are available in the PlateLab repository~\cite{platelab}. The implementation described here was inspected at revision \texttt{9eda1c0}. The author-owned image collection, individual OCR predictions, private manifests, and derived media are not distributed with the article. No trained research-model weights or public annotated test set are claimed.
+
+\begin{thebibliography}{9}
+\bibitem{silva2018}
+S. M. Silva and C. R. Jung, ``License plate detection and recognition in unconstrained scenarios,'' in \emph{Proc. European Conf. Computer Vision (ECCV)}, 2018, pp. 580--596. [Online]. Available: \url{https://openaccess.thecvf.com/content_ECCV_2018/html/Sergio_Silva_License_Plate_Detection_ECCV_2018_paper.html}
+
+\bibitem{laroca2018}
+R. Laroca \emph{et al.}, ``A robust real-time automatic license plate recognition based on the YOLO detector,'' in \emph{Proc. Int. Joint Conf. Neural Networks (IJCNN)}, 2018, pp. 1--10, doi: 10.1109/IJCNN.2018.8489629.
+
+\bibitem{shi2017}
+B. Shi, X. Bai, and C. Yao, ``An end-to-end trainable neural network for image-based sequence recognition and its application to scene text recognition,'' \emph{IEEE Trans. Pattern Anal. Mach. Intell.}, vol. 39, no. 11, pp. 2298--2304, Nov. 2017, doi: 10.1109/TPAMI.2016.2646371.
+
+\bibitem{graves2006}
+A. Graves, S. Fern\'andez, F. Gomez, and J. Schmidhuber, ``Connectionist temporal classification: Labelling unsegmented sequence data with recurrent neural networks,'' in \emph{Proc. 23rd Int. Conf. Machine Learning (ICML)}, 2006, pp. 369--376. [Online]. Available: \url{https://www.cs.toronto.edu/~graves/icml_2006.pdf}
+
+\bibitem{guo2017}
+C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, ``On calibration of modern neural networks,'' in \emph{Proc. 34th Int. Conf. Machine Learning}, vol. 70, 2017, pp. 1321--1330. [Online]. Available: \url{https://proceedings.mlr.press/v70/guo17a.html}
+
+\bibitem{geifman2017}
+Y. Geifman and R. El-Yaniv, ``Selective classification for deep neural networks,'' in \emph{Advances in Neural Information Processing Systems}, vol. 30, 2017. [Online]. Available: \url{https://proceedings.neurips.cc/paper_files/paper/2017/hash/4a8423d5e91fda00bb7e46540e2b0cf1-Abstract.html}
+
+\bibitem{applevision}
+Apple, ``VNRecognizeTextRequest,'' \emph{Apple Developer Documentation}. Accessed: Oct. 15, 2026. [Online]. Available: \url{https://developer.apple.com/documentation/vision/vnrecognizetextrequest}
+
+\bibitem{mlkit}
+Google, ``Recognize text in images with ML Kit on Android,'' \emph{Google for Developers}. Accessed: Oct. 15, 2026. [Online]. Available: \url{https://developers.google.com/ml-kit/vision/text-recognition/v2/android}
+
+\bibitem{platelab}
+A. Awoyele, ``PlateLab: Nigerian license plate recognition,'' source code and project records, 2026. [Online]. Available: \url{https://github.com/walexkino/nigerian-plate-recognition}
+\end{thebibliography}
+\end{document}

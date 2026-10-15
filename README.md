@@ -14,7 +14,7 @@ apps/
   android/        Android Studio/Gradle app, resources, and Android tests
 shared/
   branding/       Original PlateLab icon and its design notes
-research/         Research guides, dataset tools, and Python requirements
+research/         Manuscript, research guides, dataset tools, and requirements
 scripts/          Commands that build both apps
 docs/             Shared documentation and the approved synthetic screenshot
 ```
@@ -128,6 +128,8 @@ Release 0.2.0 was checked with JavaScript workflow regressions and an end-to-end
 On the 154 downloaded 699×466 images, a local benchmark on 2026-10-13 completed without OCR process failures: median 142.9 ms, p95 155.8 ms, peak child-process RSS 54.84 MiB. Each invocation launched a fresh OCR process. These are descriptive timings, **not recognition accuracy**. The memory figure excludes the desktop UI and WebKit processes. No ground-truth test set exists yet. See `research/validation.md`.
 
 ## Research direction
+
+The [IEEE-style article draft](research/manuscript/README.md), **Nigerian License Plate Recognition Under Partial Occlusion: A Local Prototype and Mathematical Framework**, by Akinwale Awoyele, is available as [PDF](research/manuscript/platelab_partial_occlusion.pdf) and [editable LaTeX](research/manuscript/platelab_partial_occlusion.tex). It includes numbered mathematical models and clearly distinguishes implemented behavior, historical timing measurements, and proposed research. It has not been submitted or accepted; recognition accuracy and improvements under occlusion remain unmeasured.
 
 The planned research baseline is CRNN–CTC. Future experiments must use verified transcripts, plate regions, vehicle-identity-disjoint splits, occlusion severity labels, uncertainty calibration and an untouched test set. Any new method must be compared against credible baselines with ablations. Current app functionality establishes an inference and review workflow; it does not establish scientific novelty or solve missing visual information.
 

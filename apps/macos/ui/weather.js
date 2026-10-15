@@ -18,10 +18,15 @@
     const dates=Array.isArray(d.time)?d.time:[];
     return {current:data.current,zone:data.timezone_abbreviation || data.timezone || '',days:dates.slice(0,3).map((date,i)=>({date,code:d.weather_code?.[i],high:d.temperature_2m_max?.[i],low:d.temperature_2m_min?.[i],rain:d.precipitation_probability_max?.[i]}))};
   }
-  const api = {condition,value,coordinates,forecastURL,parse};
+  function places(data) {
+    if(Array.isArray(data?.results))return data.results;
+    return (Array.isArray(data?.features)?data.features:[]).map(f=>{const p=f.properties||{},c=f.geometry?.coordinates||[];const address=[p.housenumber,p.street].filter(Boolean).join(' ');const label=[p.name,address,p.district,p.city||p.town||p.village,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ');return {label,name:label,latitude:c[1],longitude:c[0]};});
+  }
+  const api = {condition,value,coordinates,forecastURL,parse,places};
   if (typeof module === 'object' && module.exports) { module.exports=api; return; }
   root.PlateWeather=api;
-  let generation=0, abort=null, panel=null, selection=null, saved=null;
+  let generation=0, abort=null, panel=null, selection=null, saved=null, suggestionTimer=null;
+  const searchCache=new Map();
   const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
   async function request(channel,body,url) {
     if(root.webkit?.messageHandlers?.[channel]) return nativeRequest(channel,body,35000,'Weather request timed out. Try a city search.');
@@ -31,10 +36,10 @@
     finally {clearTimeout(timer);if(abort===controller)abort=null;}
   }
   function close() {
-    generation++;abort?.abort();panel=null;
+    generation++;clearTimeout(suggestionTimer);abort?.abort();panel=null;
     if(root.webkit?.messageHandlers?.weatherCancel)nativeRequest('weatherCancel',{}).catch(()=>{});
   }
-  function busy(message) {panel.status.textContent=message;for(const b of panel.actions)b.disabled=true;panel.results.replaceChildren();}
+  function busy(message,typing=false) {panel.status.textContent=message;for(const b of panel.actions)b.disabled=!(typing&&b===panel.input);panel.results.replaceChildren();}
   function ready() {if(panel)for(const b of panel.actions)b.disabled=false;}
   function showForecast(data,label) {
     const model=parse(data), c=model.current, box=panel.forecast;box.replaceChildren();
@@ -63,23 +68,23 @@
   }
   async function search() {
     const name=panel.input.value.trim();if(name.length<2){panel.status.textContent='Enter at least two characters of a city name.';return;}
-    const token=++generation;busy('Searching cities…');
-    try {const d=await request('weatherSearch',{query:name},'https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(name)+'&count=5&language=en&format=json');if(token!==generation||!panel)return;
-      const places=(d.results||[]).filter(p=>number(p.latitude)&&number(p.longitude));panel.status.textContent=places.length?'Select your city below.':'No matching city. Try another name or add a country.';
-      for(const p of places){const label=[p.name,p.admin1,p.country].filter(Boolean).join(', ');const b=el('button',label,'ps-button weather-city');b.onclick=()=>load(p,label);panel.results.append(b);}
+    const token=++generation;busy('Finding streets and places…',true);
+    try {const bias=selection?{latitude:selection.latitude,longitude:selection.longitude}:{};const key=name.toLowerCase()+JSON.stringify(bias);let d=searchCache.get(key);if(!d){d=await request('weatherSearch',{query:name,...bias},'https://photon.komoot.io/api/?q='+encodeURIComponent(name)+'&limit=5&lang=en'+(selection?'&lat='+selection.latitude+'&lon='+selection.longitude:''));if(searchCache.size>=20)searchCache.delete(searchCache.keys().next().value);searchCache.set(key,d);}if(token!==generation||!panel)return;
+      const matches=places(d).filter(p=>number(p.latitude)&&number(p.longitude)&&Math.abs(p.latitude)<=90&&Math.abs(p.longitude)<=180);panel.status.textContent=matches.length?'Select your street or place below.':'No matching place. Add your city or try a nearby street.';
+      for(const p of matches){const label=p.label||[p.name,p.admin1,p.country].filter(Boolean).join(', ');const b=el('button',label,'ps-button weather-city');b.onclick=()=>load(p,label);panel.results.append(b);}
     }catch(e){if(token===generation&&panel)panel.status.textContent='City search unavailable. Check your connection and try again.';}
     finally{if(token===generation)ready();}
   }
   api.open=()=>{
     close();const area=el('section',undefined,'weather-panel');area.setAttribute('aria-label','Local weather forecast');
-    area.append(el('p','A little context for your day.','weather-kicker'),el('p','Use your approximate location or choose a city for current conditions and a three-day forecast.','ps-muted'));
+    area.append(el('p','A little context for your day.','weather-kicker'),el('p','Use your approximate location or choose a street or city for current conditions and a three-day forecast.','ps-muted'));
     const location=el('button','◎ Use my location','ps-button ps-primary');location.onclick=locate;
-    const form=el('form',undefined,'weather-search'),input=el('input');input.placeholder='Search a city, e.g. Lagos';input.maxLength=100;input.setAttribute('aria-label','City name');
-    const find=el('button','Search','ps-button');find.type='submit';form.append(input,find);form.onsubmit=e=>{e.preventDefault();search();};
-    const status=el('p','Choose a location to begin.','weather-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');const results=el('div',undefined,'weather-results'),forecast=el('div',undefined,'weather-forecast');
+    const form=el('form',undefined,'weather-search'),input=el('input');input.placeholder='Street, address or city…';input.maxLength=100;input.setAttribute('aria-label','Street, address or city');input.setAttribute('autocomplete','off');input.setAttribute('aria-controls','weather-suggestions');
+    const find=el('button','Search','ps-button');find.type='submit';form.append(input,find);form.onsubmit=e=>{e.preventDefault();clearTimeout(suggestionTimer);search();};input.oninput=()=>{clearTimeout(suggestionTimer);generation++;abort?.abort();if(root.webkit?.messageHandlers?.weatherCancel)nativeRequest('weatherCancel',{}).catch(()=>{});ready();panel.results.replaceChildren();panel.status.textContent=input.value.trim().length<3?'Type at least three characters. Add your city for better street suggestions.':'Finding suggestions when you pause typing…';if(input.value.trim().length>=3)suggestionTimer=setTimeout(search,650);};
+    const status=el('p','Choose a location to begin.','weather-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');const results=el('div',undefined,'weather-results');results.id='weather-suggestions';const forecast=el('div',undefined,'weather-forecast');
     const refresh=el('button','↻ Refresh forecast','ps-button');refresh.onclick=()=>selection?load(selection,selection.label):locate();
-    area.append(location,form,status,results,forecast,refresh,el('p','Weather needs internet. Your approximate location or city search is sent to Open-Meteo. It is not saved in plate reports.','weather-privacy'));
-    const credits=el('p',undefined,'weather-credit');credits.append(el('span','Weather: Open-Meteo · Locations: GeoNames · '));const license=el('a','CC BY 4.0');license.href='https://open-meteo.com/en/licence';license.target='_blank';license.rel='noopener';license.onclick=e=>{if(root.webkit?.messageHandlers?.weatherSource){e.preventDefault();nativeRequest('weatherSource',{}).catch(()=>{});}};credits.append(license);area.append(credits);
+    area.append(location,form,status,results,forecast,refresh,el('p','Weather needs internet. Address suggestions use Photon; weather uses Open-Meteo. Your search and approximate area are shared for these requests. It is not saved in plate reports.','weather-privacy'));
+    const credits=el('p',undefined,'weather-credit');credits.append(el('span','Weather: Open-Meteo · Addresses: Photon / OpenStreetMap · '));const license=el('a','CC BY 4.0');license.href='https://open-meteo.com/en/licence';license.target='_blank';license.rel='noopener';license.onclick=e=>{if(root.webkit?.messageHandlers?.weatherSource){e.preventDefault();nativeRequest('weatherSource',{}).catch(()=>{});}};credits.append(license);const osm=el('a',' · © OpenStreetMap contributors');osm.href='https://www.openstreetmap.org/copyright';osm.target='_blank';osm.rel='noopener';osm.onclick=e=>{if(root.webkit?.messageHandlers?.weatherSource){e.preventDefault();nativeRequest('weatherSource',{osm:true}).catch(()=>{});}};credits.append(osm);area.append(credits);
     panel={status,input,results,forecast,actions:[location,find,refresh,input]};dialog('Local weather',area);
     if(saved){showForecast(saved.data,saved.label);status.textContent='Forecast for your last selected location. Refresh to update.';}
     document.querySelector('#dialog').addEventListener('close',close,{once:true});

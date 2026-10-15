@@ -2,7 +2,7 @@
 
 Local licence-plate recognition prototypes for **macOS and Android**, by **Akinwale Awoyele**. Both apps read visible plate text, show recognizer evidence, and support human review. They have separate native implementations and build processes.
 
-Current release: **0.4.0**, macOS build **6**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
+Current release: **0.5.0**, macOS build **7**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
 
 The custom application icon is stored in `shared/branding/platelab-icon.png`. The build script creates the standard and Retina `.icns` sizes and registers the icon in the macOS bundle.
 
@@ -24,7 +24,7 @@ Each app is self-contained. macOS uses Apple Vision and Android uses bundled ML 
 | Platform | Source and setup | Local package |
 | --- | --- | --- |
 | macOS | [macOS app](apps/macos/README.md) | `dist/macos/PlateLab.app` |
-| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.4.0.apk` |
+| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.5.0.apk` |
 
 ## App screenshot
 
@@ -83,13 +83,21 @@ python3 apps/macos/scripts/dev_server.py
 # Visit http://127.0.0.1:58070
 ```
 
+## Distant plates and detailed capture
+
+On Android, enable **Distant plates** before importing a photo or starting the camera. In camera mode, use the supported zoom slider and tap the plate to focus, then choose **Capture detailed photo**. Capture pauses the camera and opens the still image; drag a tight plate area and choose **Recognize photo**. Imported images in this mode retain up to 4096 pixels on the long edge. The device chooses the supported still-capture resolution; digital zoom may enlarge blur rather than add useful detail.
+
+On macOS, enable **Distant plates**, import media, and select the plate region. Native OCR crops from the original file decoded at up to 4096 pixels instead of relying on the 1280-pixel preview. High-detail RTSP connections use up to 2560 pixels without enlarging a smaller feed; pause and select the plate before recognizing. Live OCR uses the exact frame shown to the user. Camera optical zoom and a high-resolution stream help preserve real detail; the app cannot recover characters that the sensor did not capture. No distance in meters or accuracy improvement has been validated. See [detailed capture notes](docs/distant-plates.md).
+
+The refreshed interface uses glass-inspired gradients, translucent macOS surfaces, soft borders and highlights, and rounded controls in both themes. The macOS appearance respects reduced-motion and reduced-transparency preferences.
+
 ## Local weather
 
-Select **Weather** in the macOS navigation or **Local weather** near the Android appearance button. Choose **Use my location** and grant location permission, or search for a city and select the correct result. The section shows current modeled conditions, temperature and feels-like temperature in °C, wind in km/h, humidity, and a three-day forecast with daily highs/lows and rain probability. Refresh fetches a new forecast for the selected area; the provider's local forecast time and timezone are shown.
+Select **Weather** in the macOS navigation or **Local weather** near the Android appearance button. Choose **Use my location** and grant location permission, or type a street, address or city and select a suggestion. Suggestions appear after a short pause; add your city to distinguish similarly named streets. The section shows current modeled conditions, temperature and feels-like temperature in °C, wind in km/h, humidity, and a three-day forecast with daily highs/lows and rain probability. Refresh fetches a new forecast for the selected area; the provider's local forecast time and timezone are shown.
 
-Weather is optional and requires internet. Coordinates are rounded to two decimal places before forecast requests; location or city queries go to Open-Meteo, which also receives the request IP address. This feature does not add location or weather to recognition reports or save a weather location to disk. Android requests approximate foreground location only; there is no background-location permission. Closing weather or leaving the Android app cancels pending work. Denied/unavailable location, offline access, missing data, and service failures offer retry or city search; old forecasts are identified as previous data. OCR continues to work offline.
+Weather is optional and requires internet. Coordinates are rounded to two decimal places before forecast requests; address searches go to Photon/OpenStreetMap, and forecast requests go to Open-Meteo; both providers receive the request IP address. Suggestions can use the previously selected approximate area to rank nearby matches. This feature does not add location or weather to recognition reports or save a weather location to disk. Android requests approximate foreground location only; there is no background-location permission. Closing weather or leaving the Android app cancels pending work. Denied/unavailable location, offline access, missing data, and service failures offer retry or city search; old forecasts are identified as previous data. OCR continues to work offline.
 
-Weather data: [Open-Meteo](https://open-meteo.com/), [CC BY 4.0](https://open-meteo.com/en/licence); geocoding: GeoNames via Open-Meteo. This prototype uses the free **noncommercial** API without an API key. Commercial deployment or larger usage requires reviewing the provider's [terms and limits](https://open-meteo.com/en/terms); no paid service has been registered.
+Weather data: [Open-Meteo](https://open-meteo.com/), [CC BY 4.0](https://open-meteo.com/en/licence); address suggestions: [Photon](https://github.com/komoot/photon) / [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright). The public Photon service has no availability guarantee; searches are delayed, canceled when replaced, and cached briefly in memory to limit requests. This prototype uses the free **noncommercial** API without an API key. Commercial deployment or larger usage requires reviewing the provider's [terms and limits](https://open-meteo.com/en/terms); no paid service has been registered.
 
 ## Support PlateLab
 
@@ -145,6 +153,6 @@ See `research/submission_guide.md` for today's demonstration and `research/exper
 
 ## Android prototype
 
-The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.4.0, with saved light/dark appearance and a first-launch guided tour. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
+The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.5.0, with saved light/dark appearance and a first-launch guided tour. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
 
 © 2026 Akinwale. The source code is available under the [MIT License](LICENSE).

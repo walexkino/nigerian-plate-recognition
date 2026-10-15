@@ -17,7 +17,7 @@ final class WeatherQA: NSObject, NSApplicationDelegate, WKNavigationDelegate {
         if index == cases.count { print("Weather WebKit: \(cases.count) layouts, \(failures) failures");exit(failures == 0 ? 0 : 1) }
         let (width,theme)=cases[index];window.setContentSize(NSSize(width:width,height:900))
         let js="""
-        (async()=>{if(document.documentElement.dataset.theme!=='\(theme)')document.querySelector('#theme-toggle').click();window.fetch=async(url)=>({ok:true,json:async()=>String(url).includes('geocoding')?{results:[{name:'Lagos',country:'Nigeria',latitude:6.52,longitude:3.38}]}:\(fixture)});document.querySelector('#weather').click();document.querySelector('.weather-search input').value='Lagos';document.querySelector('.weather-search').dispatchEvent(new Event('submit',{cancelable:true}));})()
+        (async()=>{if(document.documentElement.dataset.theme!=='\(theme)')document.querySelector('#theme-toggle').click();window.fetch=async(url)=>({ok:true,json:async()=>String(url).includes('photon')?{results:[{name:'Lagos',country:'Nigeria',latitude:6.52,longitude:3.38}]}:\(fixture)});document.querySelector('#weather').click();document.querySelector('.weather-search input').value='Lagos';document.querySelector('.weather-search').dispatchEvent(new Event('submit',{cancelable:true}));})()
         """
         web.evaluateJavaScript(js) { _,_ in DispatchQueue.main.asyncAfter(deadline:.now()+0.15) {
             self.web.evaluateJavaScript("document.querySelector('.weather-city').click()") { _,_ in DispatchQueue.main.asyncAfter(deadline:.now()+0.15) { self.check(width,theme) } }

@@ -42,3 +42,9 @@ build/weather-qa/weather-native
 ```
 
 The WebKit check uses an invented fixture, not real weather or private photographs. Screenshots and runtime outputs remain in ignored local folders.
+
+## Street suggestions — 0.5.0
+
+Typing three or more characters starts a search after a 650 ms pause. Search also accepts an explicit submission. Photon, a search-as-you-type geocoder using OpenStreetMap data, supplies streets, addresses, and cities. The current session's approximate selection can bias matches nearby; adding a city is useful where street names repeat. Selecting a result fetches weather for its rounded coordinates. Search remains editable while suggestions load. Older responses and pending timers are canceled or ignored when the text changes or the panel closes. Up to 20 query responses are cached in memory only.
+
+Search text and any selected approximate-area bias are sent to `photon.komoot.io`; weather requests go to Open-Meteo. Providers receive normal connection information, including IP addresses. Attribution: [Photon](https://github.com/komoot/photon) and [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). The public demo API allows reasonable use but can throttle requests and provides no availability guarantee. It may not cover every street. The public Nominatim API is not used for autocomplete.

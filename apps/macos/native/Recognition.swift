@@ -3,6 +3,22 @@ import Vision
 import CoreImage
 import ImageIO
 
+/// Decode before cropping; the preview's downsampled pixels are not the OCR source.
+func detailedPlateRegion(imageURL: URL?, data: Data?, region: [Double]) throws -> (data: Data, width: Int, height: Int) {
+    let fail = NSError(domain: "PlateLab.Detail", code: 1, userInfo: [NSLocalizedDescriptionKey: "The original source or selected plate region is unavailable. Reimport the image or reconnect the feed."])
+    guard region.count == 4, region.allSatisfy({ $0.isFinite }), region[0] >= 0, region[1] >= 0, region[2] > 0, region[3] > 0, region[0]+region[2] <= 1.00001, region[1]+region[3] <= 1.00001 else { throw fail }
+    let source: CGImageSource?
+    if let url = imageURL { source = CGImageSourceCreateWithURL(url as CFURL, nil) }
+    else if let data = data { source = CGImageSourceCreateWithData(data as CFData, nil) }
+    else { throw fail }
+    guard let source = source, let original = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceCreateThumbnailWithTransform:true,kCGImageSourceThumbnailMaxPixelSize:4096] as CFDictionary) else { throw fail }
+    let rect = CGRect(x: region[0]*Double(original.width), y: region[1]*Double(original.height), width: region[2]*Double(original.width), height: region[3]*Double(original.height)).integral.intersection(CGRect(x:0,y:0,width:original.width,height:original.height))
+    guard rect.width >= 8, rect.height >= 8, let crop = original.cropping(to: rect) else { throw fail }
+    let bitmap = NSBitmapImageRep(cgImage: crop)
+    guard let encoded = bitmap.representation(using:.jpeg,properties:[.compressionFactor:0.97]) else { throw fail }
+    return (encoded,crop.width,crop.height)
+}
+
 func recognizeBaseline(_ data: Data) throws -> [[String: Any]] {
     guard let source = CGImageSourceCreateWithData(data as CFData, nil),
           let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {

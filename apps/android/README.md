@@ -1,4 +1,4 @@
-# PlateLab for Android — 0.4.0
+# PlateLab for Android — 0.5.0
 
 A native Android prototype with bundled ML Kit Latin text recognition, photo import, live phone-camera sampling, manual transcription, review, and JSON export. The macOS release remains separate.
 
@@ -63,12 +63,18 @@ History contains plate text and timestamps. Clearing this app's storage or unins
 
 ## Local weather
 
-Tap **Local weather** near the theme button, then **Use my location**, or search for and select a city. Current modeled conditions and a three-day forecast include temperature, feels-like, wind, humidity, highs/lows, and rain probability, with the forecast time and timezone. Coordinates are rounded before Open-Meteo requests; no weather location is stored on disk or included in plate reports. Missing values display as unavailable. Requests are canceled when the panel closes or the app leaves the foreground. See the root README for attribution, data flow and noncommercial API terms.
+Tap **Local weather** near the theme button, then **Use my location**, or type a street, address or city, then select a suggestion. Current modeled conditions and a three-day forecast include temperature, feels-like, wind, humidity, highs/lows, and rain probability, with the forecast time and timezone. Coordinates are rounded before Open-Meteo requests; no weather location is stored on disk or included in plate reports. Missing values display as unavailable. Requests are canceled when the panel closes or the app leaves the foreground. See the root README for attribution, data flow and noncommercial API terms.
 
 ### Verified local build
 
-The Android 0.4.0 APK was compiled with SDK 36 and checked with 13 Java unit tests and Android lint (no errors). Android 15 emulator tests verified the bundled OCR model on a generated plate, photo decoding and recognition, manual review/persistence, history after a new activity launch, and live synthetic-camera processing with pause retaining its original frame. A physical phone has not yet been tested.
+The Android 0.5.0 APK was compiled with SDK 36 and checked with 16 Java unit tests and Android lint (no errors). Android 15 emulator tests verified the bundled OCR model on a generated plate, photo decoding and recognition, manual review/persistence, history after a new activity launch, and live synthetic-camera processing with pause retaining its original frame. A physical phone has not yet been tested.
 
 On this Mac, `python3 apps/android/scripts/build.py --check` uses the approved project-local SDK/JDK tools and copies the signed test APK and SHA-256 checksum to `dist/android/`.
 
 Version 0.3.1 includes both the appearance update and the first-launch guided tour. Native instrumentation verifies first-launch welcome, skipping, replay, all eight steps, Back, rotation restoration, and preserving a reviewed photo during replay. Navigation visibility is checked at phone size, 320dp with a 1.5 font scale, tablet landscape, and phone landscape in both themes.
+
+## Detailed plate capture and appearance
+
+Enable **Distant plates** before importing a photo or opening the camera. The camera exposes device-supported zoom and tap-to-focus, with **Capture detailed photo** to pause on a still image. Drag a plate area in that image, then select **Recognize photo**. You can also select an area in an imported photo. Distant imports retain up to 4096 pixels on the long edge; standard imports retain up to 1280. Plate boxes and exported region metadata refer to the full displayed source, not the cropped OCR coordinates. See `../../docs/distant-plates.md` for limits and checks.
+
+The native interface uses glass-inspired gradient panels, soft borders, and rounded buttons, with an opaque readable fallback rather than requiring a recent Android blur API. Address suggestions use Photon/OpenStreetMap; forecast requests use Open-Meteo. Searches and selection remain in memory and are not written to plate reports.

@@ -17,7 +17,7 @@ final class WeatherService: NSObject, CLLocationManagerDelegate {
     }
     func handle(_ action: String, _ body: [String: Any], reply: @escaping ([String: Any]) -> Void) {
         if action == "weatherCancel" { cancel(); reply([:]); return }
-        if action == "weatherSource" { NSWorkspace.shared.open(URL(string: "https://open-meteo.com/en/licence")!); reply([:]); return }
+        if action == "weatherSource" { NSWorkspace.shared.open(URL(string: body["osm"] as? Bool == true ? "https://www.openstreetmap.org/copyright" : "https://open-meteo.com/en/licence")!); reply([:]); return }
         if action == "weatherLocation" {
             cancel(); locationReply = reply
             timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: false) { [weak self] _ in self?.finishLocation(["error": "Location timed out. Search for a city instead."]) }
@@ -31,8 +31,9 @@ final class WeatherService: NSObject, CLLocationManagerDelegate {
         var url: URLComponents
         if action == "weatherSearch" {
             guard let query = body["query"] as? String, (2...100).contains(query.trimmingCharacters(in: .whitespacesAndNewlines).count) else { reply(["error": "Enter a city name."]); return }
-            url = URLComponents(string: "https://geocoding-api.open-meteo.com/v1/search")!
-            url.queryItems = [URLQueryItem(name: "name", value: query), URLQueryItem(name: "count", value: "5"), URLQueryItem(name: "language", value: "en"), URLQueryItem(name: "format", value: "json")]
+            url = URLComponents(string: "https://photon.komoot.io/api/")!
+            url.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "limit", value: "5"), URLQueryItem(name: "lang", value: "en")]
+            if let lat = body["latitude"] as? Double, let lon = body["longitude"] as? Double, lat.isFinite, lon.isFinite, abs(lat)<=90, abs(lon)<=180 { url.queryItems?.append(contentsOf:[URLQueryItem(name:"lat",value:String((lat*100).rounded()/100)),URLQueryItem(name:"lon",value:String((lon*100).rounded()/100))]) }
         } else {
             guard action == "weatherForecast", let lat = body["latitude"] as? Double, let lon = body["longitude"] as? Double, lat.isFinite, lon.isFinite, abs(lat) <= 90, abs(lon) <= 180 else { reply(["error": "Choose a valid location."]); return }
             url = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!

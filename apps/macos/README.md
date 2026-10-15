@@ -53,3 +53,9 @@ Text history is held in memory on macOS; export important readings before quitti
 ## Local weather
 
 Choose **Weather** in the navigation. Use approximate location after granting permission, or search for and select a city. Current modeled conditions and the next three days use Open-Meteo over HTTPS. Temperature uses °C and wind uses km/h. Location is rounded to two decimal places before transmission and is not saved in recognition reports or on disk. Weather needs internet; OCR remains local. See the root README for attribution, privacy, and the free noncommercial API terms.
+
+## Distant plates and glass-style interface
+
+Enable **Distant plates**, then select a tight plate region. Native recognition reads the corresponding region from the original file, decoded with a 4096-pixel limit, rather than enlarging the small preview. A distant-mode live connection requests a bounded 2560-pixel feed and preserves the exact displayed frame for OCR. Pause the live feed to select a plate. This does not control a camera's optical zoom or reconstruct absent characters.
+
+Weather search now suggests streets, addresses and cities using Photon/OpenStreetMap after a short typing pause. The glass-style surfaces retain opaque text, and honor reduced-motion/transparency preferences.

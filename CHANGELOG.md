@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 / Android 0.5.0 — 2026-10-15
+
+- Add detailed plate capture: Android camera zoom, tap-to-focus, still capture, up-to-4096-pixel imports, and plate-area selection with full-image evidence mapping.
+- Add original-file region OCR on macOS and bounded high-detail live feeds without upscaling; detailed live recognition uses the exact displayed frame.
+- Add street/address suggestions while typing, delayed requests, stale-response cancellation, in-memory search caching, and optional bias toward the last selected approximate area.
+- Attribute address search to Photon/OpenStreetMap and retain Open-Meteo forecast attribution; no paid account or API key is added.
+- Refresh both themes with glass-inspired panels, soft highlights, rounded controls, readable dialogs, and macOS reduced-transparency/motion support.
+- Increment macOS build to 7 and Android version code to 6.
+
 ## 0.4.0 / Android 0.4.0 — 2026-10-15
 
 - Add optional local weather with one-shot approximate location and city search on both platforms.

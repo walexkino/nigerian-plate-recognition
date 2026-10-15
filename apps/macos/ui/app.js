@@ -1,7 +1,7 @@
 'use strict';
 const $=s=>document.querySelector(s), canvas=$('#viewer'), ctx=canvas.getContext('2d');
 $('#version').textContent='v'+PlateRelease.version;
-const state={source:null, sourceName:'', video:false, roi:null, selecting:false, drag:null, observations:[], candidate:null, history:[], records:[], busy:false, loading:false, scanning:false, stop:false, objectURL:null, selectedChar:null, reviewed:false, corrected:null, activeRecord:null, nativeVideo:null, inspectingHistory:false, mediaName:'', serial:0};
+const state={distance:false,source:null, sourceName:'', video:false, roi:null, selecting:false, drag:null, observations:[], candidate:null, history:[], records:[], busy:false, loading:false, scanning:false, stop:false, objectURL:null, selectedChar:null, reviewed:false, corrected:null, activeRecord:null, nativeVideo:null, inspectingHistory:false, mediaName:'', serial:0};
 const pending=new Map();
 state.live={connected:false,connecting:false,running:false,generation:0,timer:null,sequence:0,time:0,capturedAt:null,interval:1000};
 state.inputType='image';
@@ -17,6 +17,7 @@ function recognize(image){
   return fetch('/api/recognize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:image.split(',')[1]})}).then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||'Recognition unavailable');return data;});
 }
 function controls(){
+  $('#distance').disabled=locked()||state.live.connected||state.inspectingHistory;
   $('#analyze').disabled=!state.source||locked()||state.inspectingHistory;
   $('#crop').disabled=!state.source||locked()||state.inspectingHistory;
   $('#import').disabled=locked()||state.live.connected;$('#empty-import').disabled=$('#import').disabled;$('#file').disabled=$('#import').disabled;
@@ -73,6 +74,7 @@ function addHistory(result){
   for(const item of state.history){const b=document.createElement('button'),im=document.createElement('img'),label=document.createElement('span');im.src=item.preview;im.alt='Analyzed source frame';label.textContent=`${item.candidate?.text||'No candidate'} · ${item.time===null?'image':item.time.toFixed(1)+'s'}`;b.append(im,label);b.onclick=async()=>{if(locked())return;state.loading=true;controls();try{const img=new Image();img.src=item.preview;await img.decode();state.source=workingFrame(img);state.sourceName=item.name;state.inspectingHistory=true;state.observations=item.observations;state.candidate=item.record.selected_candidate||item.candidate;resetSelection();state.reviewed=item.record.reviewed;state.corrected=item.record.manual_transcription;state.activeRecord=item.record;$('#filename').textContent=item.name;$('#source-type').textContent=/synthetic|simulation/i.test(item.name)?'SYNTHETIC DEMONSTRATION':item.time===null?'IMAGE INPUT':'VIDEO INPUT';$('#scene-badge').textContent='HISTORY FRAME'+(item.time===null?'':' · '+item.time.toFixed(1)+'s');render();}catch(e){notice(`Could not load history frame: ${e.message}`);}finally{state.loading=false;controls();}};$('#history').append(b);}
 }
 async function analyze(fromScan=false,fromLive=false){
+  if(state.distance&&!state.roi){notice('Distant plates: pause the feed if needed, select the plate region, then recognize.');if(fromLive){state.live.running=false;$('#live-pause').textContent='Resume recognition';$('#live-state').textContent='Paused · select the distant plate';controls();}return;}
   if(state.busy||state.loading||!state.source||state.inspectingHistory||(state.scanning&&!fromScan)||(state.live.running&&!fromLive))return;state.busy=true;controls();$('#status').textContent='Recognizing…';notice('Reading image locally…');
   try{
     if(state.video&&!state.nativeVideo){$('#video').pause();state.source=workingFrame($('#video'));}
@@ -81,17 +83,21 @@ async function analyze(fromScan=false,fromLive=false){
     const r=state.roi;let input=state.source;
     clearReading();paint();
     if(r){input=document.createElement('canvas');const scale=Math.min(4,1280/r.w,1280/r.h);input.width=Math.max(1,Math.round(r.w*scale));input.height=Math.max(1,Math.round(r.h*scale));input.getContext('2d').drawImage(state.source,r.x,r.y,r.w,r.h,0,0,input.width,input.height);}
-    const result=await recognize(input.toDataURL('image/jpeg',.94));
+    const detail=state.distance&&r&&window.webkit?.messageHandlers?.recognizeRegion;
+    const result=detail?await nativeRequest('recognizeRegion',{region:[r.x/state.source.width,r.y/state.source.height,r.w/state.source.width,r.h/state.source.height],time,live:!!live,liveImage:live?state.live.detailImage?.split(',')[1]:undefined},60000,'Detailed region recognition timed out. Try a smaller region.'):await recognize(input.toDataURL('image/jpeg',.94));
+    if(detail)$('#distance-hint').textContent=`Plate source: ${result.sourcePlateWidth} × ${result.sourcePlateHeight} pixels. `+(result.sourcePlateWidth<120||result.sourcePlateHeight<24?'Very small detail — move closer or use optical zoom.':'Inspect the original evidence; enlargement is not recovered detail.');
     state.observations=result.observations.map(o=>({...o,box:r?[(r.x+o.box[0]*r.w)/state.source.width,(r.y+o.box[1]*r.h)/state.source.height,o.box[2]*r.w/state.source.width,o.box[3]*r.h/state.source.height]:o.box}));
     state.candidate=PlateCore.candidates(state.observations)[0]||null;state.corrected=null;state.reviewed=false;
     $('#latency').textContent=`${Math.round(result.elapsedMs)} ms OCR`;$('#scene-badge').textContent=r?'USER-SELECTED PLATE REGION':live?'LIVE CAMERA FRAME':'ORIGINAL EVIDENCE';
     const record={source:state.sourceName,input_type:state.inputType,time_seconds:time,captured_at:live?.capturedAt||null,engine:'Apple Vision',candidate:state.candidate,observations:state.observations,ocr_ms:result.elapsedMs,calibrated:false,per_character_confidence:null,reviewed:false,manual_transcription:null,synthetic:/synthetic|simulation/i.test(state.sourceName),region:r};
+    record.capture_mode=state.distance?'distant-region':'standard';if(result.sourcePlateWidth)record.source_plate_pixels=[result.sourcePlateWidth,result.sourcePlateHeight];
     state.activeRecord=record;state.records.push(record);if(state.records.length>1000)state.records.shift();
     addHistory({record,name:state.sourceName,time,candidate:state.candidate,observations:state.observations,preview:state.source.toDataURL('image/jpeg',.72)});
     notice(state.candidate?'Reading ready. Inspect the source before marking it reviewed.':'No matching plate candidate. Try selecting a tighter plate region.');
   }catch(error){notice(`Recognition failed: ${error.message}`);if(fromScan)state.stop=true;if(fromLive){state.live.running=false;$('#live-pause').textContent='Resume recognition';$('#live-state').textContent='Recognition paused after an error';}}
   finally{state.busy=false;render();}
 }
+$('#distance').onclick=()=>{if(locked()||state.live.connected||state.inspectingHistory)return;state.distance=!state.distance;$('#distance').setAttribute('aria-pressed',String(state.distance));$('#distance').textContent=state.distance?'⌖ Distant plates · on':'⌖ Distant plates';$('#distance-hint').hidden=!state.distance;clearReading();render();notice(state.distance?'Select a tight plate region. Native mode reads more detail from the original file or high-detail feed.':'Standard recognition mode.');if(state.distance&&state.source&&!state.selecting)$('#crop').click();};
 $('#analyze').onclick=()=>analyze();
 $('#crop').onclick=()=>{if(locked()||state.inspectingHistory)return;$('#video').pause();state.selecting=!state.selecting;$('#crop').setAttribute('aria-pressed',String(state.selecting));canvas.style.cursor=state.selecting?'crosshair':'default';notice(state.selecting?'Drag a rectangle around the plate, then recognize again.':'Plate region selection off.');};
 function point(event){const r=canvas.getBoundingClientRect();return {x:Math.max(0,Math.min(canvas.width,(event.clientX-r.left)*canvas.width/r.width)),y:Math.max(0,Math.min(canvas.height,(event.clientY-r.top)*canvas.height/r.height))};}
@@ -102,7 +108,7 @@ canvas.onpointercancel=()=>{state.drag=null;state.roi=null;$('#reset-crop').hidd
 $('#reset-crop').onclick=()=>{if(locked()||state.inspectingHistory)return;resetSelection();clearReading();render();};
 async function seek(video,time){if(state.nativeVideo){await nativeFrame(time);return;}if(Math.abs(video.currentTime-time)<.02)return;await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{video.removeEventListener('seeked',done);reject(new Error('Video seek timed out.'));},10000);function done(){clearTimeout(timer);resolve();}video.addEventListener('seeked',done,{once:true});video.currentTime=time;});}
 $('#scan').onclick=async()=>{
- if(locked()||!state.video)return;const video=state.nativeVideo||$('#video');const times=PlateCore.sampleTimes(video.duration,video.currentTime);if(!times.length){notice('Video duration unavailable.');return;}
+ if(locked()||!state.video)return;if(state.distance&&!state.roi){notice('Select the distant plate region before scanning.');return;}const video=state.nativeVideo||$('#video');const times=PlateCore.sampleTimes(video.duration,video.currentTime);if(!times.length){notice('Video duration unavailable.');return;}
  state.scanning=true;state.inspectingHistory=false;state.sourceName=state.mediaName;$('#filename').textContent=state.mediaName;state.stop=false;video.pause?.();video.controls=false;controls();
  try{for(let i=0;i<times.length&&!state.stop;i++){await seek(video,times[i]);if(state.stop)break;$('#progress').textContent=`Frame ${i+1} / ${times.length}`;await analyze(true);}notice(state.stop?'Scan stopped. Completed readings are available for export.':'Scan complete. Each result is an independent frame reading.');}
  catch(e){notice(e.message);}finally{state.scanning=false;video.controls=true;render();}
@@ -130,7 +136,7 @@ async function applyLiveFrame(result,generation){
  const img=new Image();img.src=result.image;await img.decode();if(!liveCurrent(generation))return false;
  const frame=workingFrame(img);if(state.source&&(frame.width!==state.source.width||frame.height!==state.source.height))resetSelection();
  state.source=frame;state.sourceName=state.mediaName;state.inspectingHistory=false;state.inputType='live';
- state.live.sequence=result.sequence;state.live.time=result.time;state.live.capturedAt=result.captured_at;
+ state.live.detailImage=state.distance?result.image:null;state.live.sequence=result.sequence;state.live.time=result.time;state.live.capturedAt=result.captured_at;
  clearReading();$('#filename').textContent=state.mediaName;$('#source-type').textContent='LIVE CAMERA';$('#scene-badge').textContent='LIVE CAMERA FRAME';paint();return true;
 }
 async function pollLive(generation){
@@ -143,9 +149,9 @@ async function pollLive(generation){
 }
 async function connectLive(url,name,interval){
  const generation=++state.live.generation;state.live.connecting=true;state.loading=true;$('#live-controls').hidden=false;$('#live-state').textContent='Connecting to camera…';controls();
- try{const result=await nativeRequest('connectLive',{url});if(generation!==state.live.generation)return;
+ try{const result=await nativeRequest('connectLive',{url,detail:state.distance});if(generation!==state.live.generation)return;
   const img=new Image();img.src=result.image;await img.decode();if(generation!==state.live.generation)return;
-  setSource(img,name);state.inputType='live';state.live.connected=true;state.live.running=true;state.live.interval=interval;state.live.sequence=result.sequence;state.live.time=result.time;state.live.capturedAt=result.captured_at;
+  setSource(img,name);state.inputType='live';state.live.connected=true;state.live.running=true;state.live.interval=interval;state.live.detailImage=state.distance?result.image:null;state.live.sequence=result.sequence;state.live.time=result.time;state.live.capturedAt=result.captured_at;
   $('#source-type').textContent='LIVE CAMERA';$('#live-pause').textContent='Pause recognition';$('#live-state').textContent='Connected · recognizing latest frames';if($('#dialog-title').textContent==='Connect live camera')$('#dialog').close();
   scheduleLive(generation,0);
  }catch(e){if(generation===state.live.generation){$('#live-state').textContent='Connection failed';notice(e.message);try{await nativeRequest('disconnectLive',{});}catch{}}}

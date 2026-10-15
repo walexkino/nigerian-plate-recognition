@@ -11,10 +11,10 @@ func jpegURL(_ image: CGImage) -> String {
     return "data:image/jpeg;base64," + data.base64EncodedString()
 }
 
-func videoFrame(_ url: URL, at seconds: Double) throws -> [String: Any] {
+func videoFrame(_ url: URL, at seconds: Double, maxDimension: Int = 1280) throws -> [String: Any] {
     let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
     generator.appliesPreferredTrackTransform = true
-    generator.maximumSize = CGSize(width: 1280, height: 1280)
+    generator.maximumSize = CGSize(width: maxDimension, height: maxDimension)
     generator.requestedTimeToleranceBefore = .zero
     generator.requestedTimeToleranceAfter = .zero
     var actualTime = CMTime.zero
@@ -39,6 +39,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
         var busy = false
         var importing = false
         var videoURL: URL?
+        var imageURL: URL?
         let liveFeed = LiveFeed()
         let weather = WeatherService()
         func deliver(_ function: String, _ payload: [String: Any]) {
@@ -56,7 +57,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
             editItem.submenu = editMenu
             NSApp.mainMenu = menu
             let controller = WKUserContentController()
-            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource"] { controller.add(self, name: name) }
+            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "recognizeRegion", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource"] { controller.add(self, name: name) }
             let configuration = WKWebViewConfiguration(); configuration.userContentController = controller
             configuration.mediaTypesRequiringUserActionForPlayback = []
             web = WKWebView(frame: .zero, configuration: configuration); web.uiDelegate = self
@@ -107,7 +108,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
                       let resource = Bundle.main.resourceURL else {
                     deliver("nativeResult", ["id": id, "error": "Enter a valid camera URL when the app is ready."]); return
                 }
-                liveFeed.start(url: url, decoder: resource.appendingPathComponent("ffmpeg")) { result in
+                liveFeed.start(url: url, decoder: resource.appendingPathComponent("ffmpeg"), maxDimension: body["detail"] as? Bool == true ? 2560 : 1280) { result in
                     switch result {
                     case .success(var payload): payload["id"] = id; self.deliver("nativeResult", payload)
                     case .failure(let error): self.deliver("nativeResult", ["id": id, "error": error.localizedDescription])
@@ -144,7 +145,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
                       }
                       DispatchQueue.main.async {
                         self.importing = false
-                        if payload["error"] == nil { self.videoURL = payload["type"] as? String == "video" ? url : nil }
+                        if payload["error"] == nil { self.videoURL = payload["type"] as? String == "video" ? url : nil; self.imageURL = payload["type"] as? String == "image" ? url : nil }
                         self.deliver("nativeMedia", payload)
                       }
                     }
@@ -176,6 +177,29 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
                         do { try report.write(to: url, atomically: true, encoding: .utf8) }
                         catch { let alert = NSAlert(); alert.messageText = "Could not save report"; alert.informativeText = error.localizedDescription; alert.runModal() }
                     }
+                }
+                return
+            }
+            if message.name == "recognizeRegion", let body = message.body as? [String: Any], let id = body["id"] as? String {
+                guard !busy && !importing, let region = body["region"] as? [Double] else { deliver("nativeResult", ["id": id, "error": "Select a plate region when the app is ready."]); return }
+                let sourceImage = imageURL, sourceVideo = videoURL
+                var liveData: Data?
+                if body["live"] as? Bool == true, let encoded = body["liveImage"] as? String, encoded.count < 12_000_000 { liveData = Data(base64Encoded: encoded) }
+                busy = true
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let started = Date()
+                    let result: [String: Any] = autoreleasepool {
+                        do {
+                            var data = liveData
+                            if body["live"] as? Bool != true, let video = sourceVideo, let time = body["time"] as? Double, time.isFinite, time >= 0 {
+                                let frame = try videoFrame(video, at: time, maxDimension: 4096)
+                                if let image = frame["image"] as? String, let encoded = image.split(separator: ",").last { data = Data(base64Encoded: String(encoded)) }
+                            }
+                            let crop = try detailedPlateRegion(imageURL: body["live"] as? Bool == true ? nil : sourceImage, data: data, region: region)
+                            return ["id": id, "observations": try recognize(crop.data), "elapsedMs": Date().timeIntervalSince(started)*1000, "sourcePlateWidth": crop.width, "sourcePlateHeight": crop.height]
+                        } catch { return ["id": id, "error": error.localizedDescription] }
+                    }
+                    DispatchQueue.main.async { self.busy = false; self.deliver("nativeResult", result) }
                 }
                 return
             }

@@ -30,7 +30,7 @@ final class LiveFeed {
     }
     func stop() { queue.sync { stopLocked() } }
 
-    func start(url: URL, decoder: URL, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+    func start(url: URL, decoder: URL, maxDimension: Int = 1280, completion: @escaping (Result<[String: Any], Error>) -> Void) {
         queue.sync {
             stopLocked()
             ready = completion; failure = nil; started = Date()
@@ -48,8 +48,9 @@ final class LiveFeed {
             if ["rtsp", "rtsps"].contains(url.scheme?.lowercased() ?? "") {
                 args += ["-rtsp_transport", "tcp", "-timeout", "15000000"]
             } else { args += ["-rw_timeout", "15000000"] }
+            let edge = maxDimension == 2560 ? 2560 : 1280
             args += ["-i", url.absoluteString, "-map", "0:v:0", "-an", "-sn", "-dn",
-                     "-vf", "fps=2,scale=1280:1280:force_original_aspect_ratio=decrease",
+                     "-vf", "fps=2,scale='min(\(edge),iw)':'min(\(edge),ih)':force_original_aspect_ratio=decrease",
                      "-c:v", "mjpeg", "-q:v", "4", "-f", "image2pipe", "pipe:1"]
             task.arguments = args
             task.standardInput = FileHandle.nullDevice

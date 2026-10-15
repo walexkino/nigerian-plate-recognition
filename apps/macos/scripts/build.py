@@ -26,7 +26,7 @@ resources = app/'Resources'; binary = app/'MacOS'
 resources.mkdir(parents=True, exist_ok=True); binary.mkdir(parents=True, exist_ok=True)
 target = f'{platform.machine()}-apple-macosx13.0'
 subprocess.run(['swiftc','-O','-target',target,str(root/'apps/macos/native/main.swift'),str(root/'apps/macos/native/Recognition.swift'),str(root/'apps/macos/native/LiveFeed.swift'),str(root/'apps/macos/native/Weather.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/macos/module-cache')],check=True)
-for filename in ['index.html','style.css','live.css','core.js','release.js','support.js','support-qr.svg','theme.js','app.js','weather.js','weather.css']:
+for filename in ['index.html','style.css','live.css','core.js','release.js','support.js','support-qr.svg','theme.js','app.js','weather.js','weather.css','glass.css']:
     shutil.copy2(root/'apps/macos/ui'/filename,resources/filename)
 # Finder and the Dock need a native multi-resolution icon, including Retina sizes.
 icon_source = root/'shared/branding/platelab-icon.png'

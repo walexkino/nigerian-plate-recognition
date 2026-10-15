@@ -21,6 +21,14 @@ function ui(){
  return {get,calls,pending,open(){get('#weather').onclick();return get('#dialog-body').children[0];},close(){get('#dialog').listeners.close();}};
 }
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+test('Photon street results preserve address and country, including zero coordinates',()=>{
+ const p=weather.places({features:[{properties:{name:'Broad Street',street:'Broad Street',city:'Lagos',country:'Nigeria'},geometry:{coordinates:[0,0]}}]})[0];assert.equal(p.latitude,0);assert.equal(p.longitude,0);assert.match(p.label,/Broad Street, Lagos, Nigeria/);
+});
+test('typing suggestions wait for a pause and ignore a response for older text',async()=>{
+ const app=ui(),panel=app.open(),input=panel.children.find(e=>e.tag==='form').children[0],results=panel.children.find(e=>e.className==='weather-results');
+ input.value='Bro';input.oninput();input.value='Broad';input.oninput();assert.equal(app.pending.length,0);await new Promise(r=>setTimeout(r,700));assert.equal(app.pending.length,1);assert.equal(input.disabled,false);
+ input.value='Broad Street Lagos';input.oninput();app.pending[0].resolve({results:[{name:'Wrong old match',latitude:1,longitude:1}]});await tick();assert.equal(results.children.length,0);app.close();await new Promise(r=>setTimeout(r,700));assert.equal(app.pending.length,1);
+});
 test('opening weather requests no location or forecast; closing ignores a late location',async()=>{
  const app=ui(),panel=app.open();assert.deepEqual(app.calls.map(c=>c.channel),['weatherCancel']);panel.children.find(e=>e.textContent==='◎ Use my location').onclick();assert.equal(app.pending[0].channel,'weatherLocation');app.close();app.pending[0].resolve({latitude:6.51234,longitude:3.39234});await tick();assert.equal(app.calls.some(c=>c.channel==='weatherForecast'),false);
 });

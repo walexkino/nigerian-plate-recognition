@@ -2,7 +2,7 @@
 
 Local licence-plate recognition prototypes for **macOS and Android**, by **Akinwale Awoyele**. Both apps read visible plate text, show recognizer evidence, and support human review. They have separate native implementations and build processes.
 
-Current release: **0.5.0**, macOS build **7**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
+Current releases: **macOS 0.5.0**, build **7**, and **Android 0.6.0**, version code **7**. Release metadata lives in `apps/macos/ui/release.js`; the interface and build script use the same version. See `CHANGELOG.md` for changes. New compatible features increment the minor version, fixes increment the patch version, and breaking changes increment the major version.
 
 The custom application icon is stored in `shared/branding/platelab-icon.png`. The build script creates the standard and Retina `.icns` sizes and registers the icon in the macOS bundle.
 
@@ -14,6 +14,8 @@ apps/
   android/        Android Studio/Gradle app, resources, and Android tests
 shared/
   branding/       Original PlateLab icon and its design notes
+backend/
+  firebase/       Proposed database rules and local emulator checks
 research/         Manuscript, research guides, dataset tools, and requirements
 scripts/          Commands that build both apps
 docs/             Shared documentation and the approved synthetic screenshot
@@ -24,7 +26,7 @@ Each app is self-contained. macOS uses Apple Vision and Android uses bundled ML 
 | Platform | Source and setup | Local package |
 | --- | --- | --- |
 | macOS | [macOS app](apps/macos/README.md) | `dist/macos/PlateLab.app` |
-| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.5.0.apk` |
+| Android | [Android app](apps/android/README.md) | `dist/android/PlateLab-Android-0.6.0.apk` |
 
 ## App screenshot
 
@@ -153,6 +155,6 @@ See `research/submission_guide.md` for today's demonstration and `research/exper
 
 ## Android prototype
 
-The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.5.0, with saved light/dark appearance and a first-launch guided tour. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
+The native Android implementation is in `apps/android/`. It uses bundled ML Kit for photo and live phone-camera recognition, with review, private text history, and JSON export. Android is independently versioned; the current version is 0.6.0, with saved light/dark appearance, a first-launch guided tour, and optional Google sign-in. Accounts do not upload or sync readings in this release. See [Firebase setup](docs/firebase.md) for configuration, privacy boundaries, and tested database rules. See `apps/android/README.md` for building, installation, testing, and the features not yet ported from macOS.
 
 © 2026 Akinwale. The source code is available under the [MIT License](LICENSE).

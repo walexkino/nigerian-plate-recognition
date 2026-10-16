@@ -261,3 +261,10 @@ apps/android/local.properties
 
 # Existing synthetic documentation image is approved for the README.
 !docs/images/platelab-synthetic-demo.jpg
+
+# Firebase client configuration is supplied locally for connected builds.
+/apps/android/app/google-services.json
+
+# Local JavaScript tooling and emulator logs.
+node_modules/
+*-debug.log

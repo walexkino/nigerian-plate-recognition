@@ -1,4 +1,4 @@
-# PlateLab for Android — 0.5.0
+# PlateLab for Android — 0.6.0
 
 A native Android prototype with bundled ML Kit Latin text recognition, photo import, live phone-camera sampling, manual transcription, review, and JSON export. The macOS release remains separate.
 
@@ -7,6 +7,10 @@ A native Android prototype with bundled ML Kit Latin text recognition, photo imp
 A branded welcome screen appears until the user finishes or skips onboarding. Take a quick tour explains photo import, the live phone camera, recognition, human review, history, JSON export, appearance, and optional support in eight steps. Each step highlights the corresponding workspace control and offers Next, Back, and Skip tour; the last step offers Finish tour. The walkthrough does not open files, start a camera, request permission, or export reports.
 
 Finishing or skipping is remembered across launches. The current step survives activity recreation during the tour. About → Replay tour opens the welcome screen again without replacing the current photo or reading; an active camera is paused first. The welcome and tour match the chosen theme, allow larger text to scroll, keep navigation buttons visible, and respect the system animation setting. In compact landscape layouts, the explanatory card uses the safe screen height instead of obscuring a highlighted control.
+
+## Optional Google account
+
+Open **Account · Guest** to sign in with Google or continue as a guest. Sign-out and confirmed PlateLab account deletion are available on the account screen. Recognition still works without an account. This release does not upload readings or photos, write database profiles, or provide cloud backup; local history remains shared device history. See [Firebase configuration and tests](../../docs/firebase.md). A clean checkout without the ignored `app/google-services.json` builds in guest mode.
 
 ## Features
 

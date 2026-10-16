@@ -1,5 +1,13 @@
 # Changelog
 
+## Android 0.6.0 — 2026-10-16
+
+- Add an optional Google sign-in account screen using Credential Manager and Firebase Authentication, with guest access, sign-out, and confirmed authentication-account deletion.
+- Keep plate evidence and text history local; cloud backup and profile writes are not enabled. macOS remains 0.5.0.
+- Support public-source guest builds without the locally supplied Firebase client configuration. Keep normal builds HTTPS-only.
+- Prepare profile-only Firestore access rules and local tests; the live database remains locked pending deliberate publication.
+- Increment Android version code to 7 while retaining Android 6 compatibility.
+
 ## 0.5.0 / Android 0.5.0 — 2026-10-15
 
 - Add detailed plate capture: Android camera zoom, tap-to-focus, still capture, up-to-4096-pixel imports, and plate-area selection with full-image evidence mapping.

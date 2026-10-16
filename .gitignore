@@ -268,3 +268,6 @@ apps/android/local.properties
 # Local JavaScript tooling and emulator logs.
 node_modules/
 *-debug.log
+
+# macOS Firebase client configuration stays local.
+/apps/macos/GoogleService-Info.plist

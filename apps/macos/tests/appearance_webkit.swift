@@ -23,10 +23,10 @@ final class AppearanceQA: NSObject, NSApplicationDelegate, WKNavigationDelegate 
         window.setContentSize(NSSize(width: width, height: 900))
         web.evaluateJavaScript("if(document.documentElement.dataset.theme !== '\(theme)') document.querySelector('#theme-toggle').click();") { _, error in
             if let error = error { print(error); self.failures += 1 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.check(width, theme, modal: false) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.check(width, theme, modal: "workspace") }
         }
     }
-    func check(_ width: Int, _ theme: String, modal: Bool) {
+    func check(_ width: Int, _ theme: String, modal: String) {
         let script = """
         (()=>{const root=document.documentElement, rail=document.querySelector('.ps-rail'), buttons=[...document.querySelectorAll('.ps-header-actions button')]; return JSON.stringify({width:innerWidth,scroll:root.scrollWidth,theme:root.dataset.theme,bg:getComputedStyle(document.querySelector('#plate-studio')).backgroundColor,nav:getComputedStyle(rail).display,buttons:buttons.every(b=>b.getBoundingClientRect().right<=innerWidth&&b.getBoundingClientRect().width>0),dialog:!document.querySelector('dialog').open||document.querySelector('dialog').scrollWidth<=document.querySelector('dialog').clientWidth});})()
         """
@@ -34,11 +34,13 @@ final class AppearanceQA: NSObject, NSApplicationDelegate, WKNavigationDelegate 
             var passed = false
             if let value = result as? String, let bytes = value.data(using: .utf8), let data = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any] {
                 passed = (data["scroll"] as? Int ?? Int.max) <= width + 1 && data["theme"] as? String == theme && data["nav"] as? String != "none" && data["buttons"] as? Bool == true && data["dialog"] as? Bool == true && data["bg"] as? String == (theme == "light" ? "rgb(245, 247, 247)" : "rgb(16, 19, 21)")
-                print("\(passed ? "PASS" : "FAIL") \(width)px \(theme) \(modal ? "support" : "workspace"): \(value)")
+                print("\(passed ? "PASS" : "FAIL") \(width)px \(theme) \(modal): \(value)")
             } else { print("JS failed: \(String(describing: error))") }
             if !passed { self.failures += 1 }
-            if !modal {
-                self.web.evaluateJavaScript("document.querySelector('#support').click()") { _, _ in DispatchQueue.main.asyncAfter(deadline: .now()+0.1) {self.check(width, theme, modal: true)} }
+            if modal == "workspace" {
+                self.web.evaluateJavaScript("document.querySelector('#support').click()") { _, _ in DispatchQueue.main.asyncAfter(deadline: .now()+0.1) {self.check(width, theme, modal: "support")} }
+            } else if modal == "support" {
+                self.web.evaluateJavaScript("document.querySelector('#close-dialog').click();document.querySelector('#account').click()") { _, _ in DispatchQueue.main.asyncAfter(deadline: .now()+0.1) { self.check(width, theme, modal: "account") } }
             } else {
                 self.web.evaluateJavaScript("document.querySelector('#close-dialog').click()") { _, _ in
                     if (width == 360 && theme == "dark") || (width == 1440 && theme == "light") {

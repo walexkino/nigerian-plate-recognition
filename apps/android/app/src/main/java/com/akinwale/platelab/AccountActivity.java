@@ -19,6 +19,7 @@ import com.google.firebase.auth.*;
 /** Optional foreground sign-in. No Firestore writes or plate-history uploads happen here. */
 public final class AccountActivity extends AppCompatActivity {
     private FirebaseAuth auth;
+    private ConnectionStatus connection;
     private CredentialManager manager;
     private CancellationSignal pending;
     private boolean dark,busy,disposed;
@@ -32,13 +33,14 @@ public final class AccountActivity extends AppCompatActivity {
         dark=getSharedPreferences("appearance",MODE_PRIVATE).getBoolean("dark",(getResources().getConfiguration().uiMode&android.content.res.Configuration.UI_MODE_NIGHT_MASK)==android.content.res.Configuration.UI_MODE_NIGHT_YES);
         getDelegate().setLocalNightMode(dark?AppCompatDelegate.MODE_NIGHT_YES:AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(saved);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         auth=GoogleAccount.auth(this);manager=CredentialManager.create(this);build();render();
     }
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private int ink(){return dark?0xffedf2ef:0xff172720;}
     private TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextColor(color);t.setTextSize(size);t.setPadding(0,dp(7),0,dp(7));return t;}
     private void add(LinearLayout p,View v){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(12);p.addView(v,lp);}
-    private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextColor(ink());b.setMinHeight(dp(48));b.setTextSize(14);b.setPadding(dp(12),dp(10),dp(12),dp(10));GradientDrawable s=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{dark?0xff304e40:0xfffbfffc,dark?0xff21352c:0xffe6f2eb});s.setCornerRadius(dp(16));s.setStroke(dp(1),dark?0xff587567:0xffc7ded0);b.setBackground(s);b.setOnClickListener(v->action.run());return b;}
+    private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextColor(ink());b.setMinHeight(dp(48));b.setTextSize(14);b.setPadding(dp(12),dp(10),dp(12),dp(10));GradientDrawable s=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{dark?0xff304e40:0xfffbfffc,dark?0xff21352c:0xffe6f2eb});s.setCornerRadius(dp(16));s.setStroke(dp(1),dark?0xff587567:0xffc7ded0);b.setBackground(s);b.setFilterTouchesWhenObscured(true);b.setOnClickListener(v->action.run());return b;}
     private void build(){
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);
         GradientDrawable bg=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{dark?0xff263936:0xfffafffc,dark?0xff101719:0xffedf5f2});scroll.setBackground(bg);
@@ -47,10 +49,11 @@ public final class AccountActivity extends AppCompatActivity {
         setContentView(scroll);ViewCompat.setOnApplyWindowInsetsListener(scroll,(v,insets)->{androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars());v.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});
         ImageView logo=new ImageView(this);logo.setImageResource(R.mipmap.ic_launcher_image);logo.setContentDescription("PlateLab logo");body.addView(logo,new LinearLayout.LayoutParams(dp(64),dp(64)));
         TextView heading=text("Your PlateLab account",28,ink());heading.setTypeface(null,Typeface.BOLD);ViewCompat.setAccessibilityHeading(heading,true);add(body,heading);
+        TextView connectionLabel=text("Checking connection…",12,ink());connectionLabel.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);add(body,connectionLabel);connection=new ConnectionStatus(this,connectionLabel);
         add(body,text("Your workspace. Your choice.",17,dark?0xffb5e7c2:0xff206346));
         add(body,text("Sign in with Google, or keep using PlateLab as a guest. Photo and camera recognition work without an account.",15,ink()));
         identity=text("Guest mode",18,ink());identity.setTextIsSelectable(true);add(body,identity);
-        signIn=new SignInButton(this);signIn.setSize(SignInButton.SIZE_WIDE);signIn.setColorScheme(dark?SignInButton.COLOR_DARK:SignInButton.COLOR_LIGHT);signIn.setContentDescription("Sign in with Google");signIn.setOnClickListener(v->begin());add(body,signIn);
+        signIn=new SignInButton(this);signIn.setSize(SignInButton.SIZE_WIDE);signIn.setColorScheme(dark?SignInButton.COLOR_DARK:SignInButton.COLOR_LIGHT);signIn.setContentDescription("Sign in with Google");signIn.setFilterTouchesWhenObscured(true);signIn.setOnClickListener(v->begin());add(body,signIn);
         signOut=button("Sign out",this::signOut);add(body,signOut);
         message=text("",14,dark?0xffb5e7c2:0xff206346);message.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);add(body,message);
         add(body,text("Google and Firebase handle sign-in and your basic account details. PlateLab never asks for or stores your Google password.",13,ink()));
@@ -86,14 +89,20 @@ public final class AccountActivity extends AppCompatActivity {
         });}catch(Exception unavailable){failed("Google sign-in is unavailable on this device. You can continue as a guest.");}
     }
     private void failed(String text){busy=false;render();message.setText(text);}
-    private void clearCredentials(Runnable done){manager.clearCredentialStateAsync(new ClearCredentialStateRequest(),new CancellationSignal(),ContextCompat.getMainExecutor(this),new CredentialManagerCallback<Void,ClearCredentialException>(){
-        @Override public void onResult(Void result){if(!disposed)done.run();}
-        @Override public void onError(ClearCredentialException error){if(!disposed)done.run();}
-    });}
+    private void clearCredentials(Runnable done){
+        // A stalled credential provider must not leave the local sign-out screen locked.
+        Handler handler=new Handler(Looper.getMainLooper());boolean[] finished={false};
+        Runnable once=()->{if(finished[0])return;finished[0]=true;handler.removeCallbacksAndMessages(null);if(!disposed)done.run();};
+        CancellationSignal cancel=new CancellationSignal();handler.postDelayed(()->{cancel.cancel();once.run();},5000);
+        try{manager.clearCredentialStateAsync(new ClearCredentialStateRequest(),cancel,ContextCompat.getMainExecutor(this),new CredentialManagerCallback<Void,ClearCredentialException>(){
+            @Override public void onResult(Void result){once.run();}
+            @Override public void onError(ClearCredentialException error){once.run();}
+        });}catch(RuntimeException unavailable){once.run();}
+    }
     private void signOut(){if(busy||auth==null)return;busy=true;auth.signOut();render();clearCredentials(()->{busy=false;render();message.setText("Signed out. Local readings remain on this device.");});}
     private void confirmDelete(){if(busy||auth==null||auth.getCurrentUser()==null)return;deleteDialog=new AlertDialog.Builder(this).setTitle("Delete your PlateLab account?").setMessage("This permanently deletes your PlateLab sign-in account. It does not delete your Google account. Local plate history remains on this device; uninstalling or clearing app storage removes it. Cloud backup is not enabled.").setNegativeButton("Cancel",null).setPositiveButton("Delete account",(d,w)->delete()).show();}
     private void delete(){FirebaseUser user=auth.getCurrentUser();if(user==null)return;busy=true;render();message.setText("Deleting your PlateLab account…");user.delete().addOnCompleteListener(ContextCompat.getMainExecutor(this),task->{if(disposed)return;busy=false;render();if(task.isSuccessful()){clearCredentials(()->{render();message.setText("PlateLab account deleted. Local readings remain on this device.");});}else message.setText(task.getException() instanceof FirebaseAuthRecentLoginRequiredException?"For your security, sign out and sign in again, then retry deleting the account.":"Account could not be deleted. Check your connection and try again.");});}
-    @Override protected void onStart(){super.onStart();if(auth!=null)auth.addAuthStateListener(listener);}
-    @Override protected void onStop(){if(auth!=null)auth.removeAuthStateListener(listener);super.onStop();}
+    @Override protected void onStart(){super.onStart();if(connection!=null)connection.start();if(auth!=null)auth.addAuthStateListener(listener);}
+    @Override protected void onStop(){if(connection!=null)connection.close();if(auth!=null)auth.removeAuthStateListener(listener);super.onStop();}
     @Override protected void onDestroy(){disposed=true;if(deleteDialog!=null)deleteDialog.dismiss();if(pending!=null)pending.cancel();super.onDestroy();}
 }

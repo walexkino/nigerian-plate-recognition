@@ -3,7 +3,7 @@ const {readFileSync}=require('node:fs');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
 const {doc,setDoc,getDoc,updateDoc,deleteDoc,collection,getDocs,serverTimestamp,Timestamp}=require('firebase/firestore');
 let env;
-before(async()=>{env=await initializeTestEnvironment({projectId:'demo-platelab',firestore:{host:'127.0.0.1',port:8080,rules:readFileSync(__dirname+'/../firestore.rules','utf8')}});});
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-platelab',firestore:{host:'127.0.0.1',port:8080,rules:readFileSync(__dirname+'/../firestore.profiles-proposal.rules','utf8')}});});
 after(async()=>{await env?.cleanup();});
 beforeEach(async()=>{await env.clearFirestore();});
 const user=(uid,provider='google.com')=>env.authenticatedContext(uid,{firebase:{sign_in_provider:provider}}).firestore();

@@ -1,4 +1,4 @@
-# PlateLab for macOS — 0.3.1
+# PlateLab for macOS — 0.6.0
 
 Native Swift, WKWebView, and Apple Vision recognition for images, videos, and live RTSP/IP-camera feeds. Includes region selection, candidate inspection, manual review, JSON export, saved light/dark appearance, and optional Bitcoin support.
 
@@ -59,3 +59,13 @@ Choose **Weather** in the navigation. Use approximate location after granting pe
 Enable **Distant plates**, then select a tight plate region. Native recognition reads the corresponding region from the original file, decoded with a 4096-pixel limit, rather than enlarging the small preview. A distant-mode live connection requests a bounded 2560-pixel feed and preserves the exact displayed frame for OCR. Pause the live feed to select a plate. This does not control a camera's optical zoom or reconstruct absent characters.
 
 Weather search now suggests streets, addresses and cities using Photon/OpenStreetMap after a short typing pause. The glass-style surfaces retain opaque text, and honor reduced-motion/transparency preferences.
+
+## Optional account and connection status
+
+Choose **Account** in the navigation to sign in with Google or continue as a guest. Google authentication opens in the system authentication browser, with PKCE, state, and nonce protection; Firebase verifies the Google credential before the app shows a signed-in account. Sign out and separately confirmed account deletion are available. The local Mac build retains credentials in native memory only, for up to one hour or until the app closes. It does not upload plate readings or enable database backup. Local workspace readings remain shared workspace data.
+
+For a configured source build, register an Apple app in Firebase with the matching bundle ID, enable Google sign-in, and save the downloaded `GoogleService-Info.plist` at `apps/macos/GoogleService-Info.plist`. This path is ignored by Git. The build derives the native OAuth callback scheme from that public client configuration. Without it, guest mode remains available. No web client secret or service-account key belongs in this app. See [Firebase setup](../../docs/firebase.md).
+
+The header shows green **Online** after a successful empty HTTPS connectivity check, or red **Offline** if access cannot be verified. A path change, returning to the window, or a 30-second interval triggers another check. The check sends no account details, plates or location. A blocked connectivity endpoint can show Offline even if another service works; the indicator does not disable OCR. Browser previews label unverified network access as **Connected**.
+
+The native bridge accepts messages only from the packaged main page. Main-page navigation, subframes, new windows, scripts, and content loading are restricted. The packaged app uses hardened runtime and remains ad-hoc signed for local use; this is not Apple notarization. See [security boundaries](../../SECURITY.md).

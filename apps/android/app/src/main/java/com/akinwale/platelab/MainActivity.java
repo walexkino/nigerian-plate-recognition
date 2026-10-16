@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private final ActivityResultLauncher<String> askWeatherLocation=registerForActivityResult(new ActivityResultContracts.RequestPermission(),granted->{if(weather!=null)weather.permissionResult(granted);});
     private static final String TOUR_POSITION="tour_position";
     private Button themeButton,accountButton;
+    private ConnectionStatus connection;
     private final Map<android.graphics.drawable.GradientDrawable,Integer> themedSurfaces=new WeakHashMap<>();
     private int tone(int role){
         if(dark)return role;
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private void applyAppearance(){
         workspaceScroll.setBackground(surface(BG,0));recolor(workspaceScroll);
         for(Map.Entry<android.graphics.drawable.GradientDrawable,Integer> entry:themedSurfaces.entrySet())styleSurface(entry.getKey(),entry.getValue());
+        if(connection!=null)connection.refresh();
         themeButton.setText(dark?"☀ Light mode":"☾ Dark mode");themeButton.setContentDescription(dark?"Switch to light mode":"Switch to dark mode");
         WindowInsetsControllerCompat bars=WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView());bars.setAppearanceLightStatusBars(!dark);bars.setAppearanceLightNavigationBars(!dark);
         getWindow().setStatusBarColor(tone(BG));getWindow().setNavigationBarColor(tone(BG));
@@ -127,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         scroll.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{int available=scroll.getWidth()-scroll.getPaddingLeft()-scroll.getPaddingRight();int width=Math.min(available,dp(900));if(width>0&&root.getLayoutParams().width!=width){root.getLayoutParams().width=width;root.requestLayout();}});workspaceHost=new FrameLayout(this);workspaceHost.addView(scroll,new FrameLayout.LayoutParams(-1,-1));setContentView(workspaceHost);
         ViewCompat.setOnApplyWindowInsetsListener(scroll,(view,insets)->{androidx.core.graphics.Insets bars=insets.getInsets(WindowInsetsCompat.Type.systemBars());view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});
         LinearLayout brand=row();ImageView logo=new ImageView(this);logo.setImageResource(R.mipmap.ic_launcher_image);logo.setContentDescription("PlateLab logo");brand.addView(logo,new LinearLayout.LayoutParams(dp(42),dp(42)));
-        title=text("PlateLab",24,INK);title.setTypeface(null,Typeface.BOLD);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.setMarginStart(dp(10));brand.addView(title,tp);brand.addView(text("v"+BuildConfig.VERSION_NAME,11,MUTED));root.addView(brand);space(root,12);themeButton=button("Light mode",false,this::toggleTheme);pair(root,themeButton,button("Local weather",false,this::showWeather));space(root,10);accountButton=button(GoogleAccount.label(this),false,this::showAccount);root.addView(accountButton,new LinearLayout.LayoutParams(-1,-2));space(root,20);
+        title=text("PlateLab",24,INK);title.setTypeface(null,Typeface.BOLD);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1);tp.setMarginStart(dp(10));brand.addView(title,tp);brand.addView(text("v"+BuildConfig.VERSION_NAME,11,MUTED));root.addView(brand);space(root,6);TextView connectionLabel=text("Checking connection…",12,MUTED);connectionLabel.setTag(null);connectionLabel.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);root.addView(connectionLabel);connection=new ConnectionStatus(this,connectionLabel);space(root,12);themeButton=button("Light mode",false,this::toggleTheme);pair(root,themeButton,button("Local weather",false,this::showWeather));space(root,10);accountButton=button(GoogleAccount.label(this),false,this::showAccount);root.addView(accountButton,new LinearLayout.LayoutParams(-1,-2));space(root,20);
         root.addView(text("NIGERIAN PLATE RECOGNITION",11,MINT));space(root,6);root.addView(text("Recognition workspace",24,INK));space(root,8);
         root.addView(text("Read the evidence. Review every character.",13,MUTED));space(root,20);
         LinearLayout scene=column();scene.setPadding(dp(12),dp(12),dp(12),dp(12));scene.setBackground(surface(PANEL,18));
@@ -282,8 +284,8 @@ public class MainActivity extends AppCompatActivity {
         ScrollView supportScroll=new ScrollView(this);supportScroll.addView(panel);
         new androidx.appcompat.app.AlertDialog.Builder(dialogContext()).setTitle("Support PlateLab").setMessage("Help build what comes next.").setView(supportScroll).setPositiveButton("Open wallet",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("bitcoin:"+address)));}catch(ActivityNotFoundException e){new androidx.appcompat.app.AlertDialog.Builder(dialogContext()).setMessage("No Bitcoin wallet is installed. Use Support us to scan the QR code or copy the address.").setPositiveButton("Close",null).show();}}).setNeutralButton("Copy address",(d,w)->{android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);clipboard.setPrimaryClip(ClipData.newPlainText("Bitcoin address",address));status.setText("Bitcoin address copied.");}).setNegativeButton("Close",null).show();
     }
-    @Override protected void onStart(){super.onStart();if(weather!=null)weather.resume();}
-    @Override protected void onStop(){if(weather!=null)weather.suspend();stopCamera();super.onStop();}
+    @Override protected void onStart(){super.onStart();if(connection!=null)connection.start();if(weather!=null)weather.resume();}
+    @Override protected void onStop(){if(connection!=null)connection.close();if(weather!=null)weather.suspend();stopCamera();super.onStop();}
     @Override protected void onDestroy(){if(weather!=null)weather.close();if(tour!=null)tour.dispose();generation++;if(cameraProvider!=null)cameraProvider.unbindAll();recognizer.close();worker.shutdown();super.onDestroy();}
     private final class BoxOverlay extends View {
         private List<PlateRules.Reading> boxes=Collections.emptyList();private float[] selectedRegion;private int frameWidth=1,frameHeight=1;private final Paint pen=new Paint(Paint.ANTI_ALIAS_FLAG);

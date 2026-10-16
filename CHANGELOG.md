@@ -1,5 +1,15 @@
 # Changelog
 
+## macOS 0.6.0 / Android 0.7.0 — 2026-10-16
+
+- Add green Online / red Offline indicators to both native apps; local recognition remains available without internet. Distinguish browser-preview network hints from verified access.
+- Add optional Mac Google sign-in using the system authentication browser, PKCE, state, nonce, and Firebase verification. Keep Mac credentials in memory for up to one hour or until closing; retain guest mode and confirmed account deletion.
+- Restrict the Mac native bridge and navigation to the packaged main page, add a content security policy, and package with hardened runtime.
+- Encrypt Android text history with AES-GCM and Android Keystore, migrate existing history atomically, and preserve unreadable/tampered files. Protect the account screen from screenshots and obscured taps.
+- Distribute a non-debuggable Android APK with the existing local signing certificate. Verify cleartext/backup settings and signature before copying it to the download folder.
+- Keep deployable Firestore rules deny-all to match the locked live database; move the future profile proposal into a separately named file and test both. No cloud backup or plate uploads are enabled.
+- Increment macOS build and Android version code to 8.
+
 ## Android 0.6.0 — 2026-10-16
 
 - Add an optional Google sign-in account screen using Credential Manager and Firebase Authentication, with guest access, sign-out, and confirmed authentication-account deletion.

@@ -1,0 +1,8 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const {createApp,validOCR}=require('./helpers/app-harness');
+function buttons(app){return app.get('#dialog-body').children[0].querySelectorAll('button');}
+test('unconfigured Mac accounts offer guest mode without pretending Google is connected',()=>{const app=createApp();try{app.get('#account').click();const google=buttons(app).find(b=>b.textContent==='Sign in with Google');assert.equal(google.disabled,true);assert.ok(buttons(app).find(b=>b.textContent==='Continue as guest'));}finally{app.dispose();}});
+test('Mac account actions stay native and do not enter recognition reports',async()=>{const app=createApp();try{await app.loadImage();await app.analyze(validOCR);const records=app.report().records;app.get('#dialog').close();app.account({configured:true,signedIn:false,busy:false});app.get('#account').click();buttons(app).find(b=>b.textContent==='Sign in with Google').click();assert.equal(app.requests.accountSignIn.length,1);
+app.account({configured:true,signedIn:false,busy:true});const cancel=buttons(app).find(b=>b.textContent==='Cancel sign-in');assert.equal(cancel.disabled,false);cancel.click();assert.equal(app.requests.accountSignOut.length,1);
+app.account({configured:true,signedIn:true,busy:false,name:'Synthetic Tester',email:'synthetic@example.test'});assert.equal(app.get('#account').getAttribute('aria-label'),'Account · Signed in');buttons(app).find(b=>b.textContent==='Delete PlateLab account').click();assert.equal(app.requests.accountDelete.length,1);buttons(app).find(b=>b.textContent==='Return to workspace').click();assert.deepEqual(app.report().records,records);assert.doesNotMatch(JSON.stringify(app.report()),/synthetic@example.test/);
+}finally{app.dispose();}});

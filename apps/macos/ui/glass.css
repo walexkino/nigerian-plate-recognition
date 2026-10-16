@@ -18,3 +18,12 @@ html[data-theme=light] #plate-studio dialog{background:rgba(252,255,253,.97)}
 @media(max-width:650px){#plate-studio .ps-evidence{padding:12px;border-radius:18px}#plate-studio .ps-inspector{border-radius:18px}}
 @media(prefers-reduced-transparency:reduce){#plate-studio .ps-header,#plate-studio .ps-inspector,#plate-studio .ps-rail,#plate-studio dialog{background:var(--s-surface);backdrop-filter:none;-webkit-backdrop-filter:none}}
 @media(prefers-reduced-motion:reduce){#plate-studio .ps-button{transition:none}}
+
+/* Connection status includes a label as well as colour. */
+.connection-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap;color:var(--muted,#a2b4ab);padding:5px 9px;border:1px solid currentColor;border-radius:20px}
+.connection-status::before{content:"";width:6px;height:6px;flex-shrink:0;border-radius:50%;background:currentColor}
+.connection-status[data-status="online"]{color:#65d59a}
+.connection-status[data-status="offline"]{color:#ff8d94}
+[data-theme="light"] .connection-status[data-status="online"]{color:#187a43}
+[data-theme="light"] .connection-status[data-status="offline"]{color:#b52d38}
+.account-panel{max-width:560px;line-height:1.6}.account-identity{white-space:pre-wrap;font-size:18px;font-weight:600;overflow-wrap:anywhere}.account-panel .toolbar{flex-wrap:wrap;gap:10px}

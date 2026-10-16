@@ -7,7 +7,7 @@ const PlateRelease=require('../../ui/release.js');
 
 // A minimal DOM/media adapter. Tests run the real app handlers and native bridge.
 function createApp(){
- const elements=new Map(),timers=new Set(),watchers=[],requests={recognize:[],recognizeRegion:[],videoFrame:[],importMedia:[],connectLive:[],liveFrame:[],disconnectLive:[],supportWallet:[],copySupportAddress:[]};
+ const elements=new Map(),timers=new Set(),watchers=[],requests={recognize:[],recognizeRegion:[],videoFrame:[],importMedia:[],connectLive:[],liveFrame:[],disconnectLive:[],supportWallet:[],copySupportAddress:[],accountStatus:[],accountSignIn:[],accountSignOut:[],accountDelete:[]};
  let decodeNext=null,videoErrorNext=false;
  class Element{
   constructor(tag='div'){this.tagName=tag;this.children=[];this.style={};this.dataset={};this.attributes={};this.width=1280;this.height=720;this.disabled=false;this.hidden=false;this.currentTime=0;this.duration=3;this.videoWidth=1280;this.videoHeight=720;this.classList={add(){},remove(){}};}
@@ -60,12 +60,14 @@ function createApp(){
   loadImage(name='demo.png'){return context.window.nativeMedia({type:'image',name,image:'data:image/png;base64,ZmFrZQ=='});},
   loadVideo(duration=3,time=0){return context.window.nativeMedia({type:'video',name:'demo.mp4',duration,time,image:'data:image/png;base64,ZmFrZQ=='});},
   importBrowserVideo(){return get('#file').onchange({target:{files:[{name:'browser.mp4',type:'video/mp4',size:100}],value:'file'}});},
+  account(payload){context.window.nativeAccount(payload);},
   deliver(payload){context.window.nativeResult(payload);},
   async analyze(observations=[],error=null){const task=get('#analyze').click();const request=requests.recognize.at(-1);if(!request)throw new Error('No OCR request sent');app.deliver({id:request.id,observations,elapsedMs:10,...(error?{error}:{})});await task;},
   report(){get('#export').click();const area=get('#dialog-body').children[0];return JSON.parse(area.children.find(x=>x.tagName==='textarea').value);},
  };
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../../ui/theme.js'),'utf8'),context);
  vm.runInContext(fs.readFileSync(path.join(__dirname,'../../ui/app.js'),'utf8'),context);
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../../ui/account.js'),'utf8'),context);
  return app;
 }
 const validOCR=[{box:[.1,.2,.3,.1],pass:'original',alternatives:[{text:'ABC123DE',confidence:.9}]}];

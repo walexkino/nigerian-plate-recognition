@@ -33,7 +33,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
         exit(1)
     }
 } else {
-    final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUIDelegate {
+    final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUIDelegate, WKNavigationDelegate {
         var window: NSWindow!
         var web: WKWebView!
         var busy = false
@@ -42,6 +42,10 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
         var imageURL: URL?
         let liveFeed = LiveFeed()
         let weather = WeatherService()
+        let connection = ConnectionStatus()
+        let account = AccountService()
+        var trustedPage: URL { Bundle.main.resourceURL!.appendingPathComponent("index.html").standardizedFileURL }
+        func trusted(_ frame: WKFrameInfo) -> Bool { NativePagePolicy(page: trustedPage).accepts(frame.request.url, mainFrame: frame.isMainFrame) }
         func deliver(_ function: String, _ payload: [String: Any]) {
             guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
             web.evaluateJavaScript("window.\(function)(\(json))", completionHandler: nil)
@@ -57,24 +61,44 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
             editItem.submenu = editMenu
             NSApp.mainMenu = menu
             let controller = WKUserContentController()
-            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "recognizeRegion", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource"] { controller.add(self, name: name) }
+            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "recognizeRegion", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource", "connectionStatus", "accountStatus", "accountSignIn", "accountSignOut", "accountDelete"] { controller.add(self, name: name) }
             let configuration = WKWebViewConfiguration(); configuration.userContentController = controller
             configuration.mediaTypesRequiringUserActionForPlayback = []
-            web = WKWebView(frame: .zero, configuration: configuration); web.uiDelegate = self
+            web = WKWebView(frame: .zero, configuration: configuration); web.uiDelegate = self; web.navigationDelegate = self
             window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1380, height: 940), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             window.title = "PlateLab · Recognition Studio"; window.minSize = NSSize(width: 360, height: 520)
             window.contentView = web; window.center(); window.makeKeyAndOrderFront(nil)
             let resource = Bundle.main.resourceURL!
             web.loadFileURL(resource.appendingPathComponent("index.html"), allowingReadAccessTo: resource)
+            account.window = window; account.changed = { [weak self] payload in self?.deliver("nativeAccount", payload) }
+            connection.changed = { [weak self] status in self?.deliver("nativeConnection", ["status": status]) }; connection.start()
             NSApp.activate(ignoringOtherApps: true)
         }
         func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
-        func applicationWillTerminate(_ notification: Notification) { liveFeed.stop(); weather.cancel() }
+        func applicationWillTerminate(_ notification: Notification) { liveFeed.stop(); weather.cancel(); connection.stop(); account.stop() }
         func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
+            guard trusted(frame) else { completionHandler(nil); return }
             let panel = NSOpenPanel(); panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
             panel.begin { response in completionHandler(response == .OK ? panel.urls : nil) }
         }
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            // Native privileges belong only to the packaged page, never arbitrary files or websites.
+            decisionHandler(NativePagePolicy(page: trustedPage).accepts(navigationAction.request.url, mainFrame: navigationAction.targetFrame?.isMainFrame == true) ? .allow : .cancel)
+        }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { connection.refresh(); deliver("nativeAccount", account.snapshot()) }
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? { nil }
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard trusted(message.frameInfo) else { return }
+            if message.name.hasPrefix("account") {
+                switch message.name {
+                case "accountStatus": deliver("nativeAccount", account.snapshot())
+                case "accountSignIn": account.signIn()
+                case "accountSignOut": account.signOut()
+                case "accountDelete": account.confirmDelete()
+                default: break
+                }; return
+            }
+            if message.name == "connectionStatus" { connection.refresh(); return }
             if message.name.hasPrefix("weather"), let body = message.body as? [String: Any], let id = body["id"] as? String {
                 weather.handle(message.name, body) { result in self.deliver("nativeResult", result.merging(["id": id]) { _, new in new }) }; return
             }

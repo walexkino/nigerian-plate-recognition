@@ -13,7 +13,7 @@ struct AccountCredentials {
         if mode == .reset { return nil }
         if password.isEmpty || password.count > 4096 { return "Enter your password." }
         if mode == .create || mode == .link {
-            if password.count < 12 || password.count > 128 { return "Use a password of 12–128 characters." }
+            if password.count < 6 || password.count > 128 { return "Use a password of 6–128 characters." }
             if password != confirmation { return "The passwords do not match." }
         }
         if mode == .create && (name.isEmpty || name.count > 100) { return "Choose a display name of 1–100 characters." }
@@ -54,7 +54,7 @@ final class AccountFormController: NSWindowController, NSWindowDelegate {
         addField("Email address", email);email.stringValue = address;email.isEditable = mode != .link
         if mode != .reset { addField("Password", password) }
         if mode == .create || mode == .link { addField("Confirm password", confirmation) }
-        message.font = .systemFont(ofSize: 12);message.textColor = .secondaryLabelColor;message.stringValue = mode == .create || mode == .link ? "Use 12–128 characters. A long, unique passphrase is a good choice." : "Passwords are sent securely to Firebase Authentication and are not saved in PlateLab."
+        message.font = .systemFont(ofSize: 12);message.textColor = .secondaryLabelColor;message.stringValue = mode == .create || mode == .link ? "Use 6–128 characters. A long, unique passphrase is a good choice." : "Passwords are sent securely to Firebase Authentication and are not saved in PlateLab."
         stack.addArrangedSubview(message);message.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
         submit.title = mode == .create ? "Create account" : mode == .link ? "Save password" : mode == .reset ? "Send reset link" : "Sign in"
         submit.bezelStyle = .rounded;submit.keyEquivalent = "\r";submit.target = self;submit.action = #selector(send)

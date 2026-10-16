@@ -1,4 +1,4 @@
-# PlateLab for Android — 0.8.0
+# PlateLab for Android — 0.8.1
 
 A native Android prototype with bundled ML Kit Latin text recognition, photo import, live phone-camera sampling, manual transcription, review, and JSON export. The macOS release remains separate.
 
@@ -93,6 +93,6 @@ Version 0.7.0 adds history-encryption roundtrip, plaintext migration, tamper rej
 
 ## Password protection
 
-Firebase Authentication manages salted password hashes. PlateLab sends the entered password to Firebase over HTTPS and never writes passwords or password hashes into Firestore, app preferences, history, reports or logs. New/added passwords require 12–128 characters and confirmation. Existing passwords are not trimmed or transformed during sign-in. Password fields are masked, excluded from saved activity state and keyboard learning, and cleared on submission or leaving the account screen. Account screenshots and obscured taps remain blocked.
+Firebase Authentication manages salted password hashes. PlateLab sends the entered password to Firebase over HTTPS and never writes passwords or password hashes into Firestore, app preferences, history, reports or logs. New/added passwords require 6–128 characters and confirmation. Existing passwords are not trimmed or transformed during sign-in. Password fields are masked, excluded from saved activity state and keyboard learning, and cleared on submission or leaving the account screen. Account screenshots and obscured taps remain blocked.
 
 Enable Email/Password in Firebase Authentication (leave passwordless email links off unless separately implemented), enforce the matching password policy and keep email enumeration protection enabled. Google can remain enabled as an alternative. Provider configuration is separate from database access; Firestore remains deny-all. See [Firebase setup and verification](../../docs/firebase.md).

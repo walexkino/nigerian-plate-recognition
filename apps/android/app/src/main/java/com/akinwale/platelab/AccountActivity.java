@@ -99,7 +99,7 @@ public final class AccountActivity extends AppCompatActivity {
         boolean unverified=signed&&!user.isEmailVerified();verify.setVisibility(unverified?View.VISIBLE:View.GONE);refresh.setVisibility(unverified?View.VISIBLE:View.GONE);verify.setEnabled(!busy&&SystemClock.elapsedRealtime()>=verificationSentAt);refresh.setEnabled(!busy);
         addPassword.setVisibility(signed&&!hasPassword(user)&&!linking&&user.getEmail()!=null?View.VISIBLE:View.GONE);addPassword.setEnabled(!busy);
         back.setText(signed?linking?"Cancel adding password":"Return to workspace":"Continue as guest");back.setEnabled(!busy);back.setOnClickListener(v->{if(linking){linking=false;clearPasswords();render();}else finish();});
-        if(!busy)message.setText(!configured()?"Sign-in is not configured in this build. Continue as a guest.":linking?"Add a separate PlateLab password of 12–128 characters. Your Google sign-in will still work.":signed?user.isEmailVerified()?"Signed in. Cloud backup is off; readings stay local.":"Account created. Verify your email to confirm you own this address. Recognition remains available.":registering?"Choose a display name and a password of 12–128 characters.":"Use your email and password, Google, or guest mode.");
+        if(!busy)message.setText(!configured()?"Sign-in is not configured in this build. Continue as a guest.":linking?"Add a separate PlateLab password of 6–128 characters. Your Google sign-in will still work.":signed?user.isEmailVerified()?"Signed in. Cloud backup is off; readings stay local.":"Account created. Verify your email to confirm you own this address. Recognition remains available.":registering?"Choose a display name and a password of 6–128 characters.":"Use your email and password, Google, or guest mode.");
     }
     private String address(){return email.getText().toString().trim();}
     private boolean validEmail(String value){return value.length()<=254&&android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches();}
@@ -107,7 +107,7 @@ public final class AccountActivity extends AppCompatActivity {
         if(busy||!configured())return;String address=address(),secret=password.getText().toString(),confirmation=confirm.getText().toString(),name=displayName.getText().toString().trim();
         if(!validEmail(address)){email.setError("Enter a valid email address.");email.requestFocus();return;}
         if(secret.isEmpty()){password.setError("Enter your password.");password.requestFocus();return;}
-        if(registering||linking){if(secret.length()<12||secret.length()>128){password.setError("Use 12–128 characters.");password.requestFocus();return;}if(!secret.equals(confirmation)){confirm.setError("Passwords do not match.");confirm.requestFocus();return;}}
+        if(registering||linking){if(secret.length()<6||secret.length()>128){password.setError("Use 6–128 characters.");password.requestFocus();return;}if(!secret.equals(confirmation)){confirm.setError("Passwords do not match.");confirm.requestFocus();return;}}
         if(registering&&(name.isEmpty()||name.length()>100)){displayName.setError("Use a display name of 1–100 characters.");displayName.requestFocus();return;}
         final boolean create=registering,link=linking;clearPasswords();busy=true;render();message.setText(create?"Creating your account…":link?"Adding your password…":"Signing in…");
         if(link){FirebaseUser user=auth.getCurrentUser();if(user==null){failed("Sign in again before adding a password.");return;}
@@ -123,7 +123,7 @@ public final class AccountActivity extends AppCompatActivity {
         if(error instanceof FirebaseAuthRecentLoginRequiredException)return "For your security, sign out and sign in again, then retry.";
         if(error instanceof com.google.firebase.FirebaseTooManyRequestsException)return "Too many attempts. Please wait before trying again.";
         if(error instanceof FirebaseAuthException&&"ERROR_OPERATION_NOT_ALLOWED".equals(((FirebaseAuthException)error).getErrorCode()))return "Email/password sign-in is not enabled yet. Google and guest mode remain available.";
-        if(error instanceof FirebaseAuthWeakPasswordException)return "Choose a stronger password with at least 12 characters.";
+        if(error instanceof FirebaseAuthWeakPasswordException)return "Choose a stronger password with at least 6 characters.";
         return "Could not complete the request. Check your details and connection, then try signing in or resetting your password.";
     }
     private void resetPassword(){

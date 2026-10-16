@@ -1,4 +1,4 @@
-# PlateLab for macOS — 0.7.0
+# PlateLab for macOS — 0.7.1
 
 Native Swift, WKWebView, and Apple Vision recognition for images, videos, and live RTSP/IP-camera feeds. Includes region selection, candidate inspection, manual review, JSON export, saved light/dark appearance, and optional Bitcoin support.
 
@@ -70,4 +70,4 @@ The header shows green **Online** after a successful empty HTTPS connectivity ch
 
 The native bridge accepts messages only from the packaged main page. Main-page navigation, subframes, new windows, scripts, and content loading are restricted. The packaged app uses hardened runtime and remains ad-hoc signed for local use; this is not Apple notarization. See [security boundaries](../../SECURITY.md).
 
-Password entry happens in native secure macOS sheets, never HTML fields or JavaScript bridge payloads. Firebase receives the password over HTTPS and manages its salted hash. The app does not persist a password/hash, log it, or include it in reports. New/added passwords require 12–128 characters and confirmation; fields clear on submission or dismissal. The rest of the Mac session remains memory-only.
+Password entry happens in native secure macOS sheets, never HTML fields or JavaScript bridge payloads. Firebase receives the password over HTTPS and manages its salted hash. The app does not persist a password/hash, log it, or include it in reports. New/added passwords require 6–128 characters and confirmation; fields clear on submission or dismissal. The rest of the Mac session remains memory-only.

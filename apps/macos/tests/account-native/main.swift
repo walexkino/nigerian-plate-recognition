@@ -37,3 +37,15 @@ print("PASS: email/create/link/reset input policies preserve legacy login and re
 let emailOnly=AccountConfig(dictionary:["BUNDLE_ID":"test.app","PROJECT_ID":"demo-test","API_KEY":String(repeating:"x",count:39)],bundleID:"test.app")
 precondition(emailOnly != nil && emailOnly?.googleConfigured == false)
 print("PASS: email/password configuration works independently of a Google OAuth client")
+
+for mode: AccountFormMode in [.create,.link] {
+ for length in [6,128] {
+  let password=String(repeating:"x",count:length)
+  precondition(AccountCredentials.validate(mode:mode,name:"Synthetic Tester",email:"synthetic@example.test",password:password,confirmation:password) == nil)
+ }
+ for length in [5,129] {
+  let password=String(repeating:"x",count:length)
+  precondition(AccountCredentials.validate(mode:mode,name:"Synthetic Tester",email:"synthetic@example.test",password:password,confirmation:password) != nil)
+ }
+}
+print("PASS: create and link accept password lengths 6 and 128, reject 5 and 129")

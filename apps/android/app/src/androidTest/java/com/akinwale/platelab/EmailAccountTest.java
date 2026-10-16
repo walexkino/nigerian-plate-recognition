@@ -37,7 +37,7 @@ public class EmailAccountTest {
     private JSONObject codes() throws Exception {HttpURLConnection c=(HttpURLConnection)new URL("http://10.0.2.2:9099/emulator/v1/projects/demo-platelab/oobCodes").openConnection();c.setConnectTimeout(5000);c.setReadTimeout(5000);try(InputStream in=c.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1)out.write(b,0,n);return new JSONObject(out.toString("UTF-8"));}finally{c.disconnect();}}
     private String code(String email,String type) throws Exception {JSONArray list=codes().getJSONArray("oobCodes");for(int i=list.length()-1;i>=0;i--){JSONObject o=list.getJSONObject(i);if(email.equals(o.getString("email"))&&type.equals(o.getString("requestType")))return o.getString("oobCode");}throw new AssertionError("Local action code missing");}
     @Test public void createAccountVerifiesEmailAndKeepsHistoryUnchanged() throws Exception {
-        String email=address(),password=secret();ReadingStore store=new ReadingStore(context);String before=ReadingStore.report(store.load()).getJSONArray("records").toString();
+        String email=address(),password=UUID.randomUUID().toString().substring(0,6);ReadingStore store=new ReadingStore(context);String before=ReadingStore.report(store.load()).getJSONArray("records").toString();
         try(ActivityScenario<AccountActivity> scenario=ActivityScenario.launch(AccountActivity.class)){
             scenario.onActivity(a->{label(a,"Create an account").performClick();value(a,"displayName","Synthetic Tester");value(a,"email",email);value(a,"password",password);value(a,"confirm",password);label(a,"Create account").performClick();});await(scenario);
             assertNotNull(auth.getCurrentUser());assertEquals("Synthetic Tester",auth.getCurrentUser().getDisplayName());assertFalse(auth.getCurrentUser().isEmailVerified());
@@ -80,7 +80,7 @@ public class EmailAccountTest {
     @Test public void addingPasswordPreservesTheExistingGoogleUid() throws Exception {
         String email=address(),subject=UUID.randomUUID().toString();String header="{\"alg\":\"none\",\"typ\":\"JWT\"}",payload=new JSONObject().put("sub",subject).put("email",email).put("email_verified",true).put("name","Synthetic Google Tester").toString();
         String token=android.util.Base64.encodeToString(header.getBytes(StandardCharsets.UTF_8),11)+"."+android.util.Base64.encodeToString(payload.getBytes(StandardCharsets.UTF_8),11)+".";
-        Tasks.await(auth.signInWithCredential(GoogleAuthProvider.getCredential(token,null)),10,TimeUnit.SECONDS);String uid=auth.getCurrentUser().getUid(),password=secret();
+        Tasks.await(auth.signInWithCredential(GoogleAuthProvider.getCredential(token,null)),10,TimeUnit.SECONDS);String uid=auth.getCurrentUser().getUid(),password=UUID.randomUUID().toString().substring(0,6);
         try(ActivityScenario<AccountActivity> scenario=ActivityScenario.launch(AccountActivity.class)){
             scenario.onActivity(a->{label(a,"Add email & password").performClick();assertFalse(field(a,"email",EditText.class).isEnabled());value(a,"password",password);value(a,"confirm",password);label(a,"Save password").performClick();});await(scenario);assertEquals(uid,auth.getCurrentUser().getUid());
         }

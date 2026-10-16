@@ -1,5 +1,10 @@
 # Changelog
 
+## macOS 0.7.1 / Android 0.8.1 — 2026-10-16
+
+- Accept 6–128-character passwords for account creation and adding a password to an existing Google account, matching the requested live Firebase policy.
+- Update account guidance and validation messages. Verify Email/Password and Google are enabled with passwordless email links off.
+
 ## macOS 0.7.0 / Android 0.8.0 — 2026-10-16
 
 - Make email/password the primary optional account action, with account creation, display names, verification, password reset, and Google as an alternative. Keep guest recognition.

@@ -61,7 +61,7 @@ enum AccountFailure: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .credentials: return "Could not complete the request. Check your details, then try signing in or resetting your password."
-        case .passwordPolicy: return "Choose a stronger password of 12–128 characters."
+        case .passwordPolicy: return "Choose a stronger password of 6–128 characters."
         case .rateLimit: return "Too many attempts. Please wait before trying again."
         case .disabled: return "This sign-in method is not enabled yet. Google and guest mode remain available."
         case .security: return "The sign-in response could not be verified. Please try again."

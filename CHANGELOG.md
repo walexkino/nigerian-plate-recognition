@@ -1,5 +1,15 @@
 # Changelog
 
+## macOS 0.7.0 / Android 0.8.0 — 2026-10-16
+
+- Make email/password the primary optional account action, with account creation, display names, verification, password reset, and Google as an alternative. Keep guest recognition.
+- Allow existing Google users to add a separate PlateLab password to the same account. Keep Firestore locked and plate history local.
+- Delegate salted password hashing to Firebase Authentication and send credentials over HTTPS; never store passwords or hashes in the app/database/history/reports/logs.
+- Use native secure password sheets on Mac, separate from the WebView. On Android, mask passwords, exclude them from saved state/keyboard learning, and clear them after use.
+- Require 12–128 characters and matching confirmation for new/added passwords; preserve neutral reset responses and email-enumeration protection.
+- Add local emulator tests for registration, verification, password reset, wrong-password rejection, identity-preserving linking and password-state protection. Document the opt-in local emulator compatibility patch separately from production app code.
+- Increment macOS build and Android version code to 9.
+
 ## macOS 0.6.0 / Android 0.7.0 — 2026-10-16
 
 - Add green Online / red Offline indicators to both native apps; local recognition remains available without internet. Distinguish browser-preview network hints from verified access.

@@ -7,7 +7,7 @@ const PlateRelease=require('../../ui/release.js');
 
 // A minimal DOM/media adapter. Tests run the real app handlers and native bridge.
 function createApp(){
- const elements=new Map(),timers=new Set(),watchers=[],requests={recognize:[],recognizeRegion:[],videoFrame:[],importMedia:[],connectLive:[],liveFrame:[],disconnectLive:[],supportWallet:[],copySupportAddress:[],accountStatus:[],accountSignIn:[],accountSignOut:[],accountDelete:[]};
+ const elements=new Map(),timers=new Set(),watchers=[],requests={recognize:[],recognizeRegion:[],videoFrame:[],importMedia:[],connectLive:[],liveFrame:[],disconnectLive:[],supportWallet:[],copySupportAddress:[],accountStatus:[],accountSignIn:[],accountSignOut:[],accountDelete:[],accountEmail:[],accountCreate:[],accountReset:[],accountAddPassword:[],accountVerify:[],accountRefresh:[]};
  let decodeNext=null,videoErrorNext=false;
  class Element{
   constructor(tag='div'){this.tagName=tag;this.children=[];this.style={};this.dataset={};this.attributes={};this.width=1280;this.height=720;this.disabled=false;this.hidden=false;this.currentTime=0;this.duration=3;this.videoWidth=1280;this.videoHeight=720;this.classList={add(){},remove(){}};}

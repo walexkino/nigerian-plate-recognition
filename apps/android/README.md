@@ -1,4 +1,4 @@
-# PlateLab for Android — 0.7.0
+# PlateLab for Android — 0.8.0
 
 A native Android prototype with bundled ML Kit Latin text recognition, photo import, live phone-camera sampling, manual transcription, review, and JSON export. The macOS release remains separate.
 
@@ -8,9 +8,9 @@ A branded welcome screen appears until the user finishes or skips onboarding. Ta
 
 Finishing or skipping is remembered across launches. The current step survives activity recreation during the tour. About → Replay tour opens the welcome screen again without replacing the current photo or reading; an active camera is paused first. The welcome and tour match the chosen theme, allow larger text to scroll, keep navigation buttons visible, and respect the system animation setting. In compact landscape layouts, the explanatory card uses the safe screen height instead of obscuring a highlighted control.
 
-## Optional Google account
+## Optional email/password or Google account
 
-Open **Account · Guest** to sign in with Google or continue as a guest. Sign-out and confirmed PlateLab account deletion are available on the account screen. Recognition still works without an account. This release does not upload readings or photos, write database profiles, or provide cloud backup; local history remains shared device history. See [Firebase configuration and tests](../../docs/firebase.md). A clean checkout without the ignored `app/google-services.json` builds in guest mode.
+Open **Account · Guest** to sign in with your email and password, create an account with a display name, use Google, or continue as a guest. Display names are not unique login identifiers. Forgot password requests an email reset; new email accounts can verify their address and recheck it from the account screen. Existing Google users can add a separate PlateLab password to the same account. Sign-out and confirmed PlateLab account deletion are available on the account screen. Recognition still works without an account. This release does not upload readings or photos, write database profiles, or provide cloud backup; local history remains shared device history. See [Firebase configuration and tests](../../docs/firebase.md). A clean checkout without the ignored `app/google-services.json` builds in guest mode.
 
 ## Features
 
@@ -90,3 +90,9 @@ A small green **Online** or red **Offline** label appears in the workspace and a
 The account screen blocks screen capture and filters obscured button taps. Sign-out cannot remain stuck indefinitely waiting for a credential provider. The local packaging script verifies that the APK has debugging and backups disabled, prohibits cleartext/test network settings, and verifies its signature before copying the download.
 
 Version 0.7.0 adds history-encryption roundtrip, plaintext migration, tamper rejection, interrupted-write recovery, and emulator-only disconnect/reconnect checks. The network test skips physical phones. See [security boundaries](../../SECURITY.md) and [Firebase tests](../../docs/firebase.md). Samsung Auto Blocker and normal sideload warnings remain controlled by Android.
+
+## Password protection
+
+Firebase Authentication manages salted password hashes. PlateLab sends the entered password to Firebase over HTTPS and never writes passwords or password hashes into Firestore, app preferences, history, reports or logs. New/added passwords require 12–128 characters and confirmation. Existing passwords are not trimmed or transformed during sign-in. Password fields are masked, excluded from saved activity state and keyboard learning, and cleared on submission or leaving the account screen. Account screenshots and obscured taps remain blocked.
+
+Enable Email/Password in Firebase Authentication (leave passwordless email links off unless separately implemented), enforce the matching password policy and keep email enumeration protection enabled. Google can remain enabled as an alternative. Provider configuration is separate from database access; Firestore remains deny-all. See [Firebase setup and verification](../../docs/firebase.md).

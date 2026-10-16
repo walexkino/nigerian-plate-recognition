@@ -1,4 +1,4 @@
-# PlateLab for macOS — 0.6.0
+# PlateLab for macOS — 0.7.0
 
 Native Swift, WKWebView, and Apple Vision recognition for images, videos, and live RTSP/IP-camera feeds. Includes region selection, candidate inspection, manual review, JSON export, saved light/dark appearance, and optional Bitcoin support.
 
@@ -62,10 +62,12 @@ Weather search now suggests streets, addresses and cities using Photon/OpenStree
 
 ## Optional account and connection status
 
-Choose **Account** in the navigation to sign in with Google or continue as a guest. Google authentication opens in the system authentication browser, with PKCE, state, and nonce protection; Firebase verifies the Google credential before the app shows a signed-in account. Sign out and separately confirmed account deletion are available. The local Mac build retains credentials in native memory only, for up to one hour or until the app closes. It does not upload plate readings or enable database backup. Local workspace readings remain shared workspace data.
+Choose **Account** to sign in with email/password, create an account, reset a password, use Google, or continue as a guest. New email accounts can verify their address and recheck it in the app. Google users can add a separate PlateLab password while keeping the same account. Display names are not unique login identifiers. Google authentication opens in the system authentication browser, with PKCE, state, and nonce protection; Firebase verifies the Google credential before the app shows a signed-in account. Sign out and separately confirmed account deletion are available. The local Mac build retains credentials in native memory only, for up to one hour or until the app closes. It does not upload plate readings or enable database backup. Local workspace readings remain shared workspace data.
 
-For a configured source build, register an Apple app in Firebase with the matching bundle ID, enable Google sign-in, and save the downloaded `GoogleService-Info.plist` at `apps/macos/GoogleService-Info.plist`. This path is ignored by Git. The build derives the native OAuth callback scheme from that public client configuration. Without it, guest mode remains available. No web client secret or service-account key belongs in this app. See [Firebase setup](../../docs/firebase.md).
+For a configured source build, register an Apple app in Firebase with the matching bundle ID, enable Google sign-in, and save the downloaded `GoogleService-Info.plist` at `apps/macos/GoogleService-Info.plist`. This path is ignored by Git. The build derives the native OAuth callback scheme when a Google client ID is present. Email/password also works with Firebase configuration that has no Google OAuth client. Enable Email/Password and the matching password policy in Firebase Authentication. Without it, guest mode remains available. No web client secret or service-account key belongs in this app. See [Firebase setup](../../docs/firebase.md).
 
 The header shows green **Online** after a successful empty HTTPS connectivity check, or red **Offline** if access cannot be verified. A path change, returning to the window, or a 30-second interval triggers another check. The check sends no account details, plates or location. A blocked connectivity endpoint can show Offline even if another service works; the indicator does not disable OCR. Browser previews label unverified network access as **Connected**.
 
 The native bridge accepts messages only from the packaged main page. Main-page navigation, subframes, new windows, scripts, and content loading are restricted. The packaged app uses hardened runtime and remains ad-hoc signed for local use; this is not Apple notarization. See [security boundaries](../../SECURITY.md).
+
+Password entry happens in native secure macOS sheets, never HTML fields or JavaScript bridge payloads. Firebase receives the password over HTTPS and manages its salted hash. The app does not persist a password/hash, log it, or include it in reports. New/added passwords require 12–128 characters and confirmation; fields clear on submission or dismissal. The rest of the Mac session remains memory-only.

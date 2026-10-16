@@ -61,7 +61,7 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
             editItem.submenu = editMenu
             NSApp.mainMenu = menu
             let controller = WKUserContentController()
-            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "recognizeRegion", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource", "connectionStatus", "accountStatus", "accountSignIn", "accountSignOut", "accountDelete"] { controller.add(self, name: name) }
+            for name in ["recognize", "exportReport", "importMedia", "videoFrame", "connectLive", "liveFrame", "disconnectLive", "supportWallet", "copySupportAddress", "recognizeRegion", "weatherSearch", "weatherForecast", "weatherLocation", "weatherCancel", "weatherSource", "connectionStatus", "accountStatus", "accountSignIn", "accountSignOut", "accountDelete", "accountEmail", "accountCreate", "accountReset", "accountAddPassword", "accountVerify", "accountRefresh"] { controller.add(self, name: name) }
             let configuration = WKWebViewConfiguration(); configuration.userContentController = controller
             configuration.mediaTypesRequiringUserActionForPlayback = []
             web = WKWebView(frame: .zero, configuration: configuration); web.uiDelegate = self; web.navigationDelegate = self
@@ -93,6 +93,12 @@ if CommandLine.arguments.count > 2 && ["--ocr", "--ocr-baseline"].contains(Comma
                 switch message.name {
                 case "accountStatus": deliver("nativeAccount", account.snapshot())
                 case "accountSignIn": account.signIn()
+                case "accountEmail": account.emailForm(.signIn)
+                case "accountCreate": account.emailForm(.create)
+                case "accountReset": account.emailForm(.reset)
+                case "accountAddPassword": account.emailForm(.link)
+                case "accountVerify": account.sendVerification()
+                case "accountRefresh": account.refreshProfile()
                 case "accountSignOut": account.signOut()
                 case "accountDelete": account.confirmDelete()
                 default: break

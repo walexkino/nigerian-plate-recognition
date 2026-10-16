@@ -25,7 +25,7 @@ app = args.output.resolve()/'Contents'
 resources = app/'Resources'; binary = app/'MacOS'
 resources.mkdir(parents=True, exist_ok=True); binary.mkdir(parents=True, exist_ok=True)
 target = f'{platform.machine()}-apple-macosx13.0'
-subprocess.run(['swiftc','-O','-target',target,str(root/'apps/macos/native/main.swift'),str(root/'apps/macos/native/Recognition.swift'),str(root/'apps/macos/native/LiveFeed.swift'),str(root/'apps/macos/native/Weather.swift'),str(root/'apps/macos/native/ConnectionStatus.swift'),str(root/'apps/macos/native/Account.swift'),str(root/'apps/macos/native/NativePagePolicy.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/macos/module-cache')],check=True)
+subprocess.run(['swiftc','-O','-target',target,str(root/'apps/macos/native/main.swift'),str(root/'apps/macos/native/Recognition.swift'),str(root/'apps/macos/native/LiveFeed.swift'),str(root/'apps/macos/native/Weather.swift'),str(root/'apps/macos/native/ConnectionStatus.swift'),str(root/'apps/macos/native/Account.swift'),str(root/'apps/macos/native/AccountForm.swift'),str(root/'apps/macos/native/NativePagePolicy.swift'),'-o',str(binary/'PlateLab'),'-module-cache-path',str(root/'build/macos/module-cache')],check=True)
 for filename in ['index.html','style.css','live.css','core.js','release.js','support.js','support-qr.svg','theme.js','app.js','weather.js','weather.css','glass.css','connection.js','account.js']:
     shutil.copy2(root/'apps/macos/ui'/filename,resources/filename)
 # Finder and the Dock need a native multi-resolution icon, including Retina sizes.
@@ -75,10 +75,11 @@ account_urls = []
 (resources/'GoogleService-Info.plist').unlink(missing_ok=True)
 if account_info.exists():
     config = plistlib.loads(account_info.read_bytes())
-    if config.get('BUNDLE_ID') != args.bundle_id or not config.get('CLIENT_ID', '').endswith('.apps.googleusercontent.com'):
+    if config.get('BUNDLE_ID') != args.bundle_id or (config.get('CLIENT_ID') and not config['CLIENT_ID'].endswith('.apps.googleusercontent.com')):
         raise ValueError('Mac Firebase configuration must match the bundle and native Google client.')
-    scheme = '.'.join(reversed(config['CLIENT_ID'].split('.')))
-    account_urls = [dict(CFBundleURLName='Google sign-in', CFBundleURLSchemes=[scheme])]
+    if config.get('CLIENT_ID'):
+        scheme = '.'.join(reversed(config['CLIENT_ID'].split('.')))
+        account_urls = [dict(CFBundleURLName='Google sign-in', CFBundleURLSchemes=[scheme])]
     shutil.copy2(account_info, resources/'GoogleService-Info.plist')
 with (app/'Info.plist').open('wb') as f:
     plistlib.dump(dict(CFBundleURLTypes=account_urls,CFBundleName='PlateLab',CFBundleDisplayName='PlateLab',CFBundleIdentifier=args.bundle_id,CFBundleVersion=str(release['build']),CFBundleShortVersionString=release['version'],CFBundleExecutable='PlateLab',CFBundleIconFile='PlateLab.icns',CFBundlePackageType='APPL',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True,NSLocationUsageDescription='PlateLab uses your approximate location only when you request a local weather forecast.',NSLocationWhenInUseUsageDescription='Show local weather using your approximate location when you choose Use my location.'),f)

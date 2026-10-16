@@ -25,3 +25,15 @@ for url in ["https://attacker.test/index.html","file:///tmp/index.html","file://
  precondition(!policy.accepts(URL(string:url),mainFrame:true))
 }
 print("PASS: bridge rejects remote pages, subframes, unexpected local files, query and file-host injection")
+
+precondition(AccountCredentials.validate(mode:.create,name:"Synthetic Tester",email:"synthetic@example.test",password:"long passphrase fixture",confirmation:"long passphrase fixture") == nil)
+precondition(AccountCredentials.validate(mode:.signIn,name:"",email:"synthetic@example.test",password:"legacy",confirmation:"") == nil)
+precondition(AccountCredentials.validate(mode:.reset,name:"",email:"synthetic@example.test",password:"",confirmation:"") == nil)
+for input in [("Tester","invalid","long passphrase fixture","long passphrase fixture"),("","synthetic@example.test","long passphrase fixture","long passphrase fixture"),("Tester","synthetic@example.test","short","short"),("Tester","synthetic@example.test","long passphrase fixture","different")]{
+ precondition(AccountCredentials.validate(mode:.create,name:input.0,email:input.1,password:input.2,confirmation:input.3) != nil)
+}
+print("PASS: email/create/link/reset input policies preserve legacy login and reject invalid registration")
+
+let emailOnly=AccountConfig(dictionary:["BUNDLE_ID":"test.app","PROJECT_ID":"demo-test","API_KEY":String(repeating:"x",count:39)],bundleID:"test.app")
+precondition(emailOnly != nil && emailOnly?.googleConfigured == false)
+print("PASS: email/password configuration works independently of a Google OAuth client")
